@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-premium-dark text-white font-sans antialiased;
+  background: radial-gradient(circle at 50% 50%, #1a1a1e 0%, #0a0a0b 100%);
+  min-height: 100vh;
+}
+
+.glass-card {
+  @apply bg-premium-card bg-opacity-60 backdrop-blur-lg border border-white border-opacity-10 rounded-2xl shadow-2xl;
+}
+
+.input-field {
+  @apply bg-white bg-opacity-5 border border-white border-opacity-10 rounded-lg px-4 py-2 focus:border-premium-accent focus:ring-1 focus:ring-premium-accent outline-none transition-all;
+}
+
+.btn-primary {
+  @apply bg-premium-accent hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg;
+}

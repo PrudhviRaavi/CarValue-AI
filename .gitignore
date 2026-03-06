@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+.eslintcache
+
+# Data/ML Artifacts
+ml/*.pkl
+ml/X_*.csv
+ml/y_*.csv
+data/*.csv
+
+# System
+.DS_Store
+Thumbs.db
