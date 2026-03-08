@@ -1,23 +1,36 @@
 # CarValue AI
 
-CarValue AI is a full-stack web application that predicts used car prices using machine learning.
-It includes:
+CarValue AI is a full-stack car valuation platform that predicts used-car prices using a trained machine learning model.
+
+The project includes:
 - A FastAPI backend with JWT authentication
-- A React + Vite frontend with a modern animated UI
-- An ML pipeline for preprocessing data and training a Random Forest model
+- A React + Vite frontend with a redesigned, responsive valuation UI
+- A preprocessing and model-training pipeline in `ml/`
 
-## Features
+## What It Does
 
-- User registration and login (JWT token based)
-- Auth-protected car price prediction endpoint
-- AI-style value explanation with each prediction
-- Interactive frontend with 3D visuals and chat assistant
-- Re-trainable ML pipeline from CSV data
+- Register and sign in users via JWT (`/register`, `/token`)
+- Run protected car value predictions (`/predict`)
+- Return valuation + explanation text for decision support
+- Provide an in-app AI-style chat assistant (`/chat`)
+- Support retraining via `data_pipeline.py` and `train_model.py`
+
+## Current Frontend Experience
+
+The current UI includes:
+- Clean responsive layout for desktop and mobile
+- Hero + quick stats panel
+- Valuation form with 9 model inputs
+- Real-time result panel (private sale and trade-in estimate)
+- Auth modal (login/register)
+- Floating AI assistant chat panel
+
+Note: Prediction requires sign-in because `/predict` is auth-protected.
 
 ## Tech Stack
 
 - Backend: FastAPI, SQLAlchemy, SQLite, python-jose, passlib
-- Frontend: React, Vite, Tailwind CSS, Framer Motion, GSAP, Three.js
+- Frontend: React, Vite, Tailwind CSS, Framer Motion, Axios, Lucide icons
 - ML: pandas, scikit-learn, pickle
 
 ## Project Structure
@@ -45,64 +58,51 @@ data/
 - Python 3.10+
 - Node.js 18+ and npm
 
-## Setup and Run
+## Local Setup
 
-### 1. Clone repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/PrudhviRaavi/CarValue-AI.git
 cd CarValue-AI
 ```
 
-### 2. Backend setup
+### 2. Backend
 
 ```bash
 cd backend
 python -m venv venv
 ```
 
-Activate virtual environment:
+Activate venv:
 
-- Windows PowerShell:
+- Windows PowerShell
 
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
-- macOS/Linux:
+- macOS/Linux
 
 ```bash
 source venv/bin/activate
 ```
 
-Install backend and ML dependencies:
+Install dependencies:
 
 ```bash
 pip install fastapi uvicorn sqlalchemy python-jose[cryptography] passlib[bcrypt] python-multipart pydantic pandas numpy scikit-learn
 ```
 
-### 3. Optional: Rebuild ML artifacts
-
-If `ml/model.pkl` and `ml/encoders.pkl` are missing or you want to retrain:
-
-```bash
-cd ../ml
-python data_pipeline.py
-python train_model.py
-```
-
-### 4. Run backend API
-
-From the `backend` directory:
+Run API:
 
 ```bash
 uvicorn main:app --reload --port 8000
 ```
 
-API docs:
-- Swagger UI: `http://localhost:8000/docs`
+Docs: `http://localhost:8000/docs`
 
-### 5. Run frontend
+### 3. Frontend
 
 In a new terminal:
 
@@ -112,9 +112,17 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open: `http://localhost:5173`
 
-## API Overview
+### 4. Optional: Retrain Model
+
+```bash
+cd ml
+python data_pipeline.py
+python train_model.py
+```
+
+## API Summary
 
 ### Auth
 
@@ -124,9 +132,9 @@ Open `http://localhost:5173`.
 
 ### Prediction
 
-- `POST /predict` (requires Bearer token)
+- `POST /predict` (Bearer token required)
 
-Sample request body:
+Example payload:
 
 ```json
 {
@@ -148,9 +156,9 @@ Sample request body:
 
 ## Notes
 
-- Backend currently uses `allow_origins=["*"]` for development CORS.
-- SQLite database file is created at `backend/car_value_ai.db`.
-- JWT secret in `backend/auth.py` is development-only and should be moved to environment variables for production.
+- CORS is currently open (`allow_origins=["*"]`) for development.
+- SQLite DB is created at `backend/car_value_ai.db`.
+- Move the JWT secret from `backend/auth.py` into environment variables for production.
 
 ## License
 
