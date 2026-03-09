@@ -8,10 +8,16 @@ from sqlalchemy.orm import Session
 import models
 import database
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 # Security configuration
-SECRET_KEY = "DEV_SECRET_KEY_FOR_CAR_VALUE_AI" # Should be in .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
+SECRET_KEY = os.getenv("SECRET_KEY", "DEV_SECRET_KEY_FOR_CAR_VALUE_AI")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
