@@ -160,6 +160,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(null);
   const [authData, setAuthData] = useState({ username: '', email: '', password: '' });
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [history, setHistory] = useState([]);
   const [chatMessages, setChatMessages] = useState([
     {
       role: 'ai',
@@ -177,10 +178,24 @@ function App() {
     if (token) {
       axios
         .get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => setUser(res.data))
+        .then((res) => {
+          setUser(res.data);
+          fetchHistory(token);
+        })
         .catch(() => localStorage.removeItem('token'));
     }
   }, []);
+
+  const fetchHistory = async (token) => {
+    try {
+      const response = await axios.get(`${API_BASE}/predictions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setHistory(response.data);
+    } catch (err) {
+      console.error('Failed to fetch history:', err);
+    }
+  };
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
@@ -195,9 +210,11 @@ function App() {
     setError(null);
     setPrediction(null);
     try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.post(`${API_BASE}/predict`, formData, { headers });
       setPrediction(response.data);
+      fetchHistory(token);
     } catch {
       setError('Prediction failed. Verify backend is running and your token is valid.');
     } finally {
@@ -477,6 +494,56 @@ function App() {
             </AnimatePresence>
           </div>
         </section>
+
+        {user && history.length > 0 && (
+          <section id="history" className="container pb-14">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="surface p-6 md:p-8"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="font-display text-3xl text-[var(--text-main)]">Recent Valuations</h2>
+                  <p className="text-[var(--text-muted)] mt-1">Your previous AI car value estimates.</p>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[var(--accent)]">
+                  <Clock size={16} />
+                  {history.length} Saved
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {history.slice().reverse().map((item) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="stat-card flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[var(--accent)] uppercase tracking-wider">
+                          {item.year} {item.brand}
+                        </span>
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <h4 className="text-lg font-bold text-[var(--text-main)] mt-1">{item.model_name}</h4>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-black/5 flex items-center justify-between">
+                      <span className="text-sm text-[var(--text-muted)]">Estimate</span>
+                      <span className="text-xl font-bold text-[var(--text-main)]">
+                        ${item.price.toLocaleString()}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
         <section id="features" className="container pb-14">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -606,4 +673,5 @@ function App() {
     </div>
   );
 }
-export default App;
+export default App;
+

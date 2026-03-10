@@ -66,6 +66,17 @@ class CarDetails(BaseModel):
     doors: int
     owner_count: int
 
+class PredictionResponse(BaseModel):
+    id: int
+    brand: str
+    model_name: str
+    year: int
+    price: float
+    created_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
 class ChatMessage(BaseModel):
     message: str
     context: Optional[Dict] = None
@@ -143,6 +154,22 @@ async def predict(car: CarDetails, current_user: models.User = Depends(auth.get_
         prediction = model.predict(df)
         predicted_price = round(float(prediction[0]), 2)
 
+        # Save to database
+        db = database.SessionLocal()
+        try:
+            db_prediction = models.Prediction(
+                brand=car.brand,
+                model_name=car.model_name,
+                year=car.year,
+                price=predicted_price,
+                user_id=current_user.id
+            )
+            db.add(db_prediction)
+            db.commit()
+            db.refresh(db_prediction)
+        finally:
+            db.close()
+
         # AI Explanation
         explanation = f"The estimated value of ${predicted_price:,} for your {car.year} {car.brand} {car.model_name} is primarily influenced by its {car.mileage:,} miles and {car.engine_size}L engine. "
         if car.year < 2015:
@@ -161,6 +188,10 @@ async def predict(car: CarDetails, current_user: models.User = Depends(auth.get_
     except Exception as e:
         print(f"Prediction Error: {e}")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+@app.get("/predictions", response_model=List[PredictionResponse])
+async def get_predictions(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
+    return db.query(models.Prediction).filter(models.Prediction.user_id == current_user.id).all()
 
 # AI Chat Assistant Endpoint (Enhanced AI Feature)
 @app.post("/chat")
