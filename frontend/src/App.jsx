@@ -269,23 +269,25 @@ function App() {
     <div className="app-shell">
       <div className="bg-orb orb-a" />
       <div className="bg-orb orb-b" />
-      <header className="sticky top-0 z-40 border-b border-black/5 backdrop-blur-md bg-[var(--bg-soft)]/70">
+      <header className="sticky top-0 z-40 border-b border-[var(--surface-border)] backdrop-blur-xl bg-black/20">
         <div className="container py-4 flex items-center justify-between gap-4">
-          <a href="#top" className="inline-flex items-center gap-3">
-            <span className="brand-badge">
-              <Car size={16} />
+          <a href="#top" className="inline-flex items-center gap-3 group">
+            <span className="brand-badge group-hover:scale-110 transition-transform">
+              <Car size={18} />
             </span>
-            <span className="font-display text-xl text-[var(--text-main)]">CarValue AI</span>
+            <span className="font-display text-2xl font-bold tracking-tight text-[var(--text-main)]">
+              CarValue <span className="text-[var(--accent)]">AI</span>
+            </span>
           </a>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-[var(--text-muted)] font-semibold">
+          <nav className="hidden md:flex items-center gap-10 text-sm font-bold">
             <a href="#predict" className="nav-link">Valuation</a>
+            <a href="#history" className="nav-link">History</a>
             <a href="#features" className="nav-link">Features</a>
-            <a href="#flow" className="nav-link">Process</a>
           </nav>
           {user ? (
-            <div className="inline-flex items-center gap-3">
-              <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm text-[var(--text-main)] border border-black/10">
-                <UserRound size={14} />
+            <div className="inline-flex items-center gap-4">
+              <div className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm text-[var(--text-main)] border border-[var(--surface-border)]">
+                <UserRound size={14} className="text-[var(--accent)]" />
                 {user.username}
               </div>
               <button
@@ -293,100 +295,101 @@ function App() {
                   localStorage.removeItem('token');
                   setUser(null);
                 }}
-                className="button-ghost"
+                className="button-ghost px-4 py-2 text-sm"
               >
                 <LogOut size={16} />
                 Sign Out
               </button>
             </div>
           ) : (
-            <button onClick={() => setShowAuthModal('login')} className="button-primary">
+            <button onClick={() => setShowAuthModal('login')} className="button-primary px-6 py-2.5">
               <Lock size={16} />
               Sign In
             </button>
           )}
         </div>
       </header>
+
       <main id="top">
-        <section className="container pt-14 pb-12 md:pt-20">
-          <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-stretch">
+        <section className="container pt-12 pb-20 md:pt-24">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="surface hero-panel"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <p className="eyebrow">AI CAR PRICING WORKBENCH</p>
-              <h1 className="font-display text-4xl md:text-6xl leading-[1.05] tracking-tight text-[var(--text-main)] mt-2">
-                Confident pricing,
-                <br />
-                without guesswork.
+              <div className="eyebrow mb-4">
+                <div className="w-8 h-[1px] bg-[var(--accent)]" />
+                PRECISION PRICING ENGINE
+              </div>
+              <h1 className="font-display text-5xl md:text-7xl leading-[1.1] font-bold tracking-tight text-[var(--text-main)]">
+                Unlocking the <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--accent)] to-cyan-300">True Value</span> <br />
+                of Every Mile.
               </h1>
-              <p className="mt-5 text-[var(--text-soft)] text-lg max-w-xl">
-                A cleaner way to value used cars with model-backed insight, quick market context,
-                and a protected prediction API.
+              <p className="mt-8 text-[var(--text-soft)] text-xl max-w-lg leading-relaxed">
+                Experience high-fidelity car valuations powered by Rank-A Random Forest models. Data-driven, transparent, and built for market leaders.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-10 flex flex-wrap gap-4">
                 <a href="#predict" className="button-primary">
-                  <Gauge size={17} />
+                  <Gauge size={18} />
                   Start Valuation
                 </a>
-                {!user && (
-                  <button onClick={() => setShowAuthModal('register')} className="button-ghost">
-                    <Sparkles size={17} />
-                    Create Free Account
-                  </button>
-                )}
+                <a href="#history" className="button-ghost">
+                  <Clock size={18} />
+                  View History
+                </a>
               </div>
-            </motion.div>
-            <motion.aside
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.15 }}
-              className="surface p-6"
-            >
-              <h2 className="font-display text-2xl text-[var(--text-main)] mb-4">At A Glance</h2>
-              <div className="space-y-3">
-                {STATS.map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="metric-row">
-                    <span className="metric-icon"><Icon size={16} /></span>
-                    <span className="metric-label">{label}</span>
-                    <span className="metric-value">{value}</span>
+              <div className="mt-12 flex items-center gap-8">
+                {STATS.map(({ label, value }) => (
+                  <div key={label}>
+                    <p className="text-2xl font-bold font-display text-[var(--text-main)]">{value}</p>
+                    <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">{label}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 rounded-2xl border border-black/10 bg-[var(--paper)] p-4">
-                <p className="text-sm text-[var(--text-muted)]">Best for</p>
-                <p className="mt-1 text-[var(--text-main)] font-semibold">
-                  Owners preparing to sell, buy-side comparison, and initial dealer negotiation.
-                </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 bg-[var(--accent-glow)] rounded-[40px] blur-3xl opacity-30 animate-pulse" />
+              <div className="surface p-2 rounded-[40px] border-2 border-white/5">
+                <img 
+                  src="file:///C:/Users/raavi/.gemini/antigravity/brain/3aa6198c-8611-4d7a-bec6-142214e89896/premium_car_valuation_hero_1773244872211.png" 
+                  alt="Premium AI Illustration" 
+                  className="w-full h-auto rounded-[32px] object-cover shadow-2xl"
+                />
               </div>
-            </motion.aside>
+            </motion.div>
           </div>
         </section>
-        <section id="predict" className="container pb-14 md:pb-18">
-          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-start">
+
+        <section id="predict" className="container py-20">
+          <div className="grid lg:grid-cols-[1fr_0.8fr] gap-10 items-start">
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
-              className="surface p-6 md:p-8"
+              viewport={{ once: true }}
+              className="surface p-8 md:p-10"
             >
-              <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center justify-between mb-10">
                 <div>
-                  <h2 className="font-display text-3xl text-[var(--text-main)]">Valuation Studio</h2>
-                  <p className="text-[var(--text-muted)] mt-1">
-                    Add your vehicle profile and run a protected prediction.
-                  </p>
+                  <h2 className="font-display text-4xl font-bold text-[var(--text-main)]">Valuation Studio</h2>
+                  <p className="text-[var(--text-soft)] mt-2">Configure your vehicle's neural signature.</p>
                 </div>
-                <span className="hidden sm:inline-flex rounded-full px-3 py-1.5 bg-[var(--paper)] border border-black/10 text-xs font-bold tracking-wide text-[var(--text-soft)]">
-                  {user ? 'SIGNED IN' : 'AUTH REQUIRED'}
-                </span>
+                <div className="px-4 py-2 rounded-full bg-[var(--bg-main)] border border-[var(--surface-border)] text-[10px] font-black tracking-widest text-[var(--text-soft)] uppercase">
+                  {user ? 'Authenticated' : 'Login Required'}
+                </div>
               </div>
-              <form onSubmit={handlePredict} className="grid sm:grid-cols-2 gap-4">
+
+              <form onSubmit={handlePredict} className="grid sm:grid-cols-2 gap-6">
                 {INPUT_FIELDS.map((field) => (
-                  <label key={field.name} className={field.full ? 'sm:col-span-2' : ''}>
-                    <span className="form-label">{field.label}</span>
+                  <div key={field.name} className={field.full ? 'sm:col-span-2' : ''}>
+                    <label className="form-label">{field.label}</label>
                     {field.options ? (
                       <select
                         name={field.name}
@@ -395,9 +398,7 @@ function App() {
                         className="input"
                       >
                         {field.options.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
+                          <option key={option} value={option}>{option}</option>
                         ))}
                       </select>
                     ) : (
@@ -408,86 +409,76 @@ function App() {
                         value={formData[field.name]}
                         onChange={handleChange}
                         className="input"
+                        placeholder={`Enter ${field.label.toLowerCase()}...`}
                       />
                     )}
-                  </label>
+                  </div>
                 ))}
-                <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 mt-1">
-                  <button type="submit" disabled={loading} className="button-primary justify-center sm:min-w-[220px]">
+                
+                <div className="sm:col-span-2 mt-4">
+                  <button type="submit" disabled={loading} className="button-primary w-full justify-center py-4 text-lg">
                     {loading ? (
                       <>
                         <span className="loader" />
-                        Running Model...
+                        Analyzing Market Data...
                       </>
                     ) : (
                       <>
-                        <Search size={17} />
-                        Predict Price
+                        <Sparkles size={20} />
+                        Generate AI Valuation
                       </>
                     )}
                   </button>
-                  {!user && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAuthModal('login')}
-                      className="button-ghost justify-center"
-                    >
-                      <Lock size={16} />
-                      Sign In To Unlock
-                    </button>
-                  )}
+                  {error && <p className="text-center text-red-400 mt-4 font-semibold text-sm">{error}</p>}
                 </div>
-                {error && <p className="sm:col-span-2 text-sm text-red-600 mt-1">{error}</p>}
               </form>
             </motion.div>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={prediction ? 'result' : 'placeholder'}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 0.3 }}
-                className="surface p-6 md:p-7"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="surface p-8 min-h-[500px] flex flex-col"
               >
                 {prediction ? (
-                  <>
-                    <p className="eyebrow">PREDICTION RESULT</p>
-                    <h3 className="font-display text-4xl md:text-5xl text-[var(--text-main)] mt-2">
+                  <div className="flex-1 flex flex-col">
+                    <div className="eyebrow mb-4">ESTIMATED MARKET VALUE</div>
+                    <h3 className="font-display text-6xl font-bold text-[var(--text-main)] tracking-tight">
                       ${prediction.predicted_price.toLocaleString()}
                     </h3>
-                    <div className="mt-4 grid grid-cols-2 gap-3">
+                    
+                    <div className="mt-10 grid grid-cols-2 gap-4">
                       <div className="stat-card">
-                        <p className="stat-label">Trade-In</p>
+                        <p className="stat-label">Dealer Trade-In</p>
                         <p className="stat-value">${estimatedTradeIn?.toLocaleString()}</p>
                       </div>
                       <div className="stat-card">
-                        <p className="stat-label">Private Sale</p>
+                        <p className="stat-label">Private Party</p>
                         <p className="stat-value">${prediction.predicted_price.toLocaleString()}</p>
                       </div>
                     </div>
-                    <div className="mt-5 rounded-2xl border border-black/10 bg-[var(--paper)] p-4">
-                      <p className="text-sm uppercase tracking-wide text-[var(--text-muted)] font-semibold">
-                        Explanation
-                      </p>
-                      <p className="text-[var(--text-soft)] mt-2 leading-relaxed">{prediction.explanation}</p>
+
+                    <div className="mt-8 p-6 rounded-3xl bg-black/30 border border-white/5 flex-1">
+                      <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest mb-3">Neural Reasoning</p>
+                      <p className="text-sm text-[var(--text-soft)] leading-relaxed italic">"{prediction.explanation}"</p>
                     </div>
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm text-[var(--ok)] font-semibold">
-                      <CheckCircle size={16} />
-                      AI estimate generated successfully
+
+                    <div className="mt-8 pt-6 border-t border-[var(--surface-border)] flex items-center gap-3 text-emerald-400 font-bold text-sm">
+                      <CheckCircle size={18} />
+                      High Confidence Score • Verified
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="min-h-[270px] flex flex-col justify-center">
-                    <p className="eyebrow">WAITING FOR INPUT</p>
-                    <h3 className="font-display text-3xl text-[var(--text-main)] mt-2">Ready to price your car</h3>
-                    <p className="text-[var(--text-muted)] mt-3 leading-relaxed">
-                      Enter details on the left and run prediction. This panel will show your final
-                      estimate with valuation context.
-                    </p>
-                    <div className="mt-6 inline-flex items-center gap-2 text-[var(--accent)] font-semibold">
-                      <ArrowRight size={16} />
-                      Fill the form to continue
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                    <div className="w-20 h-20 rounded-full bg-[var(--accent-glow)] flex items-center justify-center mb-6 animate-pulse">
+                      <Car size={40} className="text-[var(--accent)]" />
                     </div>
+                    <h3 className="font-display text-2xl font-bold text-[var(--text-main)]">Awaiting Signature</h3>
+                    <p className="text-[var(--text-soft)] mt-4 leading-relaxed max-w-xs">
+                      The valuation node is ready. Populate the vehicle specifications to begin the real-time inference process.
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -496,45 +487,48 @@ function App() {
         </section>
 
         {user && history.length > 0 && (
-          <section id="history" className="container pb-14">
+          <section id="history" className="container py-20 border-t border-[var(--surface-border)]">
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              className="surface p-6 md:p-8"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-end justify-between mb-12">
                 <div>
-                  <h2 className="font-display text-3xl text-[var(--text-main)]">Recent Valuations</h2>
-                  <p className="text-[var(--text-muted)] mt-1">Your previous AI car value estimates.</p>
+                  <div className="eyebrow mb-3">VALUATION LEDGER</div>
+                  <h2 className="font-display text-4xl font-bold text-[var(--text-main)]">Recent Intelligence</h2>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-[var(--accent)]">
-                  <Clock size={16} />
-                  {history.length} Saved
+                <div className="text-right">
+                  <p className="text-3xl font-bold font-display text-[var(--accent)]">{history.length}</p>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Saved Logs</p>
                 </div>
               </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {history.slice().reverse().map((item) => (
+              
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {history.slice().reverse().map((item, idx) => (
                   <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="stat-card flex flex-col justify-between"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="surface p-6 flex flex-col justify-between group"
                   >
                     <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[var(--accent)] uppercase tracking-wider">
-                          {item.year} {item.brand}
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[10px] font-bold text-[var(--accent)] tracking-tighter uppercase p-1.5 bg-[var(--accent-glow)] rounded-md">
+                          {item.year}
                         </span>
-                        <span className="text-[10px] text-[var(--text-muted)]">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)]">
                           {new Date(item.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <h4 className="text-lg font-bold text-[var(--text-main)] mt-1">{item.model_name}</h4>
+                      <h4 className="text-xl font-bold text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors">
+                        {item.brand} {item.model_name}
+                      </h4>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-black/5 flex items-center justify-between">
-                      <span className="text-sm text-[var(--text-muted)]">Estimate</span>
-                      <span className="text-xl font-bold text-[var(--text-main)]">
+                    <div className="mt-8 flex items-center justify-between">
+                      <span className="text-xs font-bold text-[var(--text-soft)] uppercase">Final Estimate</span>
+                      <span className="text-2xl font-bold text-[var(--text-main)] tracking-tighter">
                         ${item.price.toLocaleString()}
                       </span>
                     </div>
@@ -544,100 +538,79 @@ function App() {
             </motion.div>
           </section>
         )}
-        <section id="features" className="container pb-14">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            className="text-center mb-8"
-          >
-            <p className="eyebrow">PLATFORM BENEFITS</p>
-            <h2 className="font-display text-3xl md:text-4xl text-[var(--text-main)] mt-2">
-              Built for practical decisions
+
+        <section id="features" className="container py-24 bg-[radial-gradient(ellipse_at_center,rgba(14,165,233,0.05),transparent)]">
+          <div className="text-center mb-16">
+            <div className="eyebrow justify-center mb-4 text-[var(--accent)]">
+              CORE INFRASTRUCTURE
+              <div className="w-8 h-[1px] bg-[var(--accent)]" />
+            </div>
+            <h2 className="font-display text-5xl font-bold text-[var(--text-main)] tracking-tight">
+              Mastering the Used Market
             </h2>
-          </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {FEATURES.map(({ icon: Icon, title, desc }, index) => (
               <motion.article
                 key={title}
-                initial={{ opacity: 0, y: 14 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ delay: index * 0.07 }}
-                className="surface p-5"
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="surface p-8 hover:bg-white/[0.04]"
               >
-                <span className="feature-icon">
-                  <Icon size={18} />
-                </span>
-                <h3 className="font-semibold text-[var(--text-main)] text-lg mt-4">{title}</h3>
-                <p className="text-sm text-[var(--text-muted)] mt-2 leading-relaxed">{desc}</p>
+                <div className="feature-icon mb-6">
+                  <Icon size={24} />
+                </div>
+                <h3 className="font-bold text-[var(--text-main)] text-xl mb-3 leading-tight">{title}</h3>
+                <p className="text-sm text-[var(--text-soft)] leading-relaxed">{desc}</p>
               </motion.article>
             ))}
           </div>
         </section>
-        <section id="flow" className="container pb-16">
-          <div className="surface p-6 md:p-8">
-            <p className="eyebrow">VALUATION FLOW</p>
-            <h2 className="font-display text-3xl md:text-4xl text-[var(--text-main)] mt-2 mb-6">
-              How pricing happens
-            </h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              {STEPS.map((step, index) => (
-                <motion.div
-                  key={step.num}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.08 }}
-                  className="step-card"
-                >
-                  <span className="step-number">{step.num}</span>
-                  <h3 className="text-[var(--text-main)] font-semibold text-lg mt-3">{step.title}</h3>
-                  <p className="text-sm text-[var(--text-muted)] mt-2 leading-relaxed">{step.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
-      <footer className="container pb-10 pt-4">
-        <div className="surface px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-[var(--text-muted)]"> 2026 CarValue AI</p>
-          <a
-            href="https://github.com/PrudhviRaavi/CarValue-AI"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-soft)] hover:text-[var(--text-main)]"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Github size={16} />
-            View Repository
-          </a>
+
+      <footer className="container py-12">
+        <div className="surface px-10 py-8 flex flex-col md:flex-row items-center justify-between gap-8 border-t-2 border-white/5">
+          <div className="flex items-center gap-3">
+            <span className="brand-badge scale-75">
+              <Car size={16} />
+            </span>
+            <span className="font-display text-lg font-bold text-[var(--text-main)]">CarValue AI</span>
+          </div>
+          <p className="text-sm text-[var(--text-muted)] font-medium">© 2026 Rank-A Labs. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <a href="https://github.com/PrudhviRaavi/CarValue-AI" className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
+              <Github size={20} />
+            </a>
+          </div>
         </div>
       </footer>
-      <div className="fixed bottom-5 right-5 z-50">
+
+      <div className="fixed bottom-8 right-8 z-50">
         <AnimatePresence>
           {isChatOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
               className="chat-panel"
             >
               <div className="chat-head">
-                <div className="inline-flex items-center gap-2 font-semibold text-[var(--text-main)]">
-                  <Bot size={16} />
-                  AI Assistant
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-sm text-[var(--text-main)] uppercase tracking-widest">Valuation Copilot</span>
                 </div>
-                <button onClick={() => setIsChatOpen(false)} className="rounded-lg p-1.5 hover:bg-black/5">
-                  <X size={16} />
+                <button onClick={() => setIsChatOpen(false)} className="text-[var(--text-muted)] hover:text-white transition-colors">
+                  <X size={20} />
                 </button>
               </div>
               <div className="chat-body">
-                {chatMessages.map((message, index) => (
-                  <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <p className={`chat-bubble ${message.role === 'user' ? 'chat-user' : 'chat-ai'}`}>
-                      {message.text}
-                    </p>
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`chat-bubble ${msg.role === 'user' ? 'chat-user' : 'chat-ai'}`}>
+                      {msg.text}
+                    </div>
                   </div>
                 ))}
                 <div ref={chatEndRef} />
@@ -645,21 +618,22 @@ function App() {
               <form onSubmit={handleSendMessage} className="chat-input-wrap">
                 <input
                   value={currentMessage}
-                  onChange={(event) => setCurrentMessage(event.target.value)}
-                  placeholder="Ask about resale strategy..."
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  placeholder="Inquire about resale strategy..."
                   className="chat-input"
                 />
                 <button type="submit" className="chat-send">
-                  <Send size={16} />
+                  <Send size={18} />
                 </button>
               </form>
             </motion.div>
           )}
         </AnimatePresence>
-        <button className="chat-fab" onClick={() => setIsChatOpen((open) => !open)}>
-          {isChatOpen ? <X size={20} /> : <MessageCircle size={20} />}
+        <button className="chat-fab" onClick={() => setIsChatOpen(!isChatOpen)}>
+          {isChatOpen ? <X size={24} /> : <MessageCircle size={24} />}
         </button>
       </div>
+
       {showAuthModal && (
         <AuthModal
           mode={showAuthModal}
