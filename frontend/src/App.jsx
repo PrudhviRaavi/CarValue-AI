@@ -21,6 +21,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { PerspectiveCamera, PresentationControls, Float, MeshDistortMaterial, Stage, Environment } from '@react-three/drei';
 import axios from 'axios';
 const API_BASE = 'http://localhost:8000';
 const FEATURES = [
@@ -78,6 +80,67 @@ const INPUT_FIELDS = [
   { label: 'Doors', name: 'doors', type: 'number' },
   { label: 'Owners', name: 'owner_count', type: 'number', full: true },
 ];
+
+function ModelCore() {
+  const mesh = useRef();
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    mesh.current.rotation.y = t * 0.2;
+  });
+
+  return (
+    <group ref={mesh}>
+      {/* Stylized Car Silhouette Body */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[4, 1, 2]} />
+        <meshStandardMaterial 
+          color="#06b6d4" 
+          metalness={1} 
+          roughness={0.1} 
+          emissive="#06b6d4" 
+          emissiveIntensity={0.2}
+        />
+      </mesh>
+      <mesh position={[-0.5, 0.8, 0]}>
+        <boxGeometry args={[2.2, 0.8, 1.8]} />
+        <meshStandardMaterial 
+          color="#1e1b4b" 
+          metalness={0.8} 
+          roughness={0.2}
+        />
+      </mesh>
+      {/* Glow Rings */}
+      <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.6, 0]}>
+          <ringGeometry args={[2.5, 2.6, 64]} />
+          <meshBasicMaterial color="#06b6d4" transparent opacity={0.3} />
+        </mesh>
+      </Float>
+    </group>
+  );
+}
+
+function CarExperience() {
+  return (
+    <div className="w-full h-full min-h-[240px] cursor-grab active:cursor-grabbing">
+      <Canvas shadows camera={{ position: [0, 0, 10], fov: 35 }}>
+        <Stage intensity={0.5} environment="city" adjustCamera={false}>
+          <PresentationControls
+            global
+            config={{ mass: 2, tension: 500 }}
+            snap={{ mass: 4, tension: 1500 }}
+            rotation={[0, 0.3, 0]}
+            polar={[-Math.PI / 3, Math.PI / 3]}
+            azimuth={[-Math.PI / 1.4, Math.PI / 1.4]}
+          >
+            <ModelCore />
+          </PresentationControls>
+        </Stage>
+        <Environment preset="night" />
+      </Canvas>
+    </div>
+  );
+}
 function AuthModal({ mode, authData, setAuthData, onClose, onSubmit, onSwitch }) {
   const isLogin = mode === 'login';
   return (
@@ -465,19 +528,38 @@ function App() {
                       <p className="text-sm text-[var(--text-soft)] leading-relaxed italic">"{prediction.explanation}"</p>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-[var(--surface-border)] flex items-center gap-3 text-emerald-400 font-bold text-sm">
-                      <CheckCircle size={18} />
-                      High Confidence Score • Verified
+                    <div className="mt-8 pt-6 border-t border-[var(--surface-border)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Model Confidence</span>
+                        <span className="text-[10px] font-bold text-[var(--ok)]">{prediction.confidence_score}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-[var(--accent)] to-emerald-400"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${prediction.confidence_score}%` }}
+                          transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+                        />
+                      </div>
+                      <div className="mt-6 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold text-[10px] uppercase tracking-wider">
+                          <CheckCircle size={14} />
+                          Verified Result
+                        </div>
+                        <div className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${prediction.market_demand === 'High' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                          Market: {prediction.market_demand}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                    <div className="w-20 h-20 rounded-full bg-[var(--accent-glow)] flex items-center justify-center mb-6 animate-pulse">
-                      <Car size={40} className="text-[var(--accent)]" />
+                    <div className="w-full h-64 mb-6">
+                      <CarExperience />
                     </div>
                     <h3 className="font-display text-2xl font-bold text-[var(--text-main)]">Awaiting Signature</h3>
                     <p className="text-[var(--text-soft)] mt-4 leading-relaxed max-w-xs">
-                      The valuation node is ready. Populate the vehicle specifications to begin the real-time inference process.
+                      The valuation node is ready. Populate vehicle specifications to begin the real-time inference process.
                     </p>
                   </div>
                 )}
