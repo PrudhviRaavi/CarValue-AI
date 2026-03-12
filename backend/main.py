@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
 import pandas as pd
-import numpy as np
 import pickle
 import os
+import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
@@ -22,14 +22,15 @@ app = FastAPI(title="Car Value AI Prediction API")
 # Add CORS middleware with more specific settings for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In development, allow all
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Define paths
-ML_DIR = os.path.join("..", "ml")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ML_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "ml"))
 MODEL_PATH = os.path.join(ML_DIR, "model.pkl")
 ENCODERS_PATH = os.path.join(ML_DIR, "encoders.pkl")
 
@@ -97,8 +98,13 @@ async def register(user: UserCreate, db: Session = Depends(database.get_db)):
         db.commit()
         db.refresh(new_user)
         
-        access_token = auth.create_access_token(data={"sub": new_user.username})
+        access_token = auth.create_access_token(
+            data={"sub": new_user.username},
+            expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
+        )
         return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Registration Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -112,7 +118,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = auth.create_access_token(data={"sub": user.username})
+    access_token = auth.create_access_token(
+        data={"sub": user.username},
+        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/users/me")
@@ -121,7 +130,11 @@ async def read_users_me(current_user: models.User = Depends(auth.get_current_use
 
 # Prediction Endpoint
 @app.post("/predict")
-async def predict(car: CarDetails, current_user: models.User = Depends(auth.get_current_user)):
+async def predict(
+    car: CarDetails,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db),
+):
     if not model or not encoders:
         raise HTTPException(status_code=500, detail="Model or encoders not loaded.")
     
@@ -155,20 +168,16 @@ async def predict(car: CarDetails, current_user: models.User = Depends(auth.get_
         predicted_price = round(float(prediction[0]), 2)
 
         # Save to database
-        db = database.SessionLocal()
-        try:
-            db_prediction = models.Prediction(
-                brand=car.brand,
-                model_name=car.model_name,
-                year=car.year,
-                price=predicted_price,
-                user_id=current_user.id
-            )
-            db.add(db_prediction)
-            db.commit()
-            db.refresh(db_prediction)
-        finally:
-            db.close()
+        db_prediction = models.Prediction(
+            brand=car.brand,
+            model_name=car.model_name,
+            year=car.year,
+            price=predicted_price,
+            user_id=current_user.id,
+        )
+        db.add(db_prediction)
+        db.commit()
+        db.refresh(db_prediction)
 
         # Advanced AI Reasoning & Metadata
         confidence_score = 92.5 if car.year > 2018 else (85.0 if car.owner_count < 2 else 78.0)

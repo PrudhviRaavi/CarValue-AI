@@ -316,6 +316,78 @@ body {
   border: 1px solid rgba(14, 165, 233, 0.2);
 }
 
+.hero-visual {
+  position: relative;
+  background: radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.15), rgba(2, 6, 23, 0.6) 45%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.85));
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.35;
+  mask-image: radial-gradient(circle at center, black 10%, transparent 80%);
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  background: rgba(14, 165, 233, 0.08);
+  color: #e0f2fe;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 800;
+  padding: 0.35rem 0.7rem;
+}
+
+.hero-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--surface-border);
+  background: rgba(2, 6, 23, 0.58);
+  padding: 0.7rem 0.8rem;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.preset-chip {
+  border-radius: 0.9rem;
+  border: 1px solid var(--surface-border);
+  background: rgba(2, 6, 23, 0.5);
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.65rem 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.preset-chip:hover {
+  color: var(--text-main);
+  border-color: rgba(14, 165, 233, 0.45);
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.preset-chip.active {
+  color: #e0f2fe;
+  border-color: rgba(14, 165, 233, 0.8);
+  background: rgba(14, 165, 233, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.25);
+}
+
 .step-card {
   border-radius: 1.5rem;
   border: 1px solid var(--surface-border);
@@ -463,6 +535,10 @@ body {
 @media (max-width: 768px) {
   .container {
     width: calc(100% - 2rem);
+  }
+
+  .preset-grid {
+    grid-template-columns: 1fr;
   }
   
   .surface {

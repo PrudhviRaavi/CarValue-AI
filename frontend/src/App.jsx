@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowRight,
-  Bot,
   Brain,
   Car,
   CheckCircle,
@@ -22,7 +20,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { PerspectiveCamera, PresentationControls, Float, MeshDistortMaterial, Stage, Environment } from '@react-three/drei';
+import { PresentationControls, Float, Stage, Environment } from '@react-three/drei';
 import axios from 'axios';
 const API_BASE = 'http://localhost:8000';
 const FEATURES = [
@@ -79,6 +77,51 @@ const INPUT_FIELDS = [
   { label: 'Transmission', name: 'transmission', options: ['Manual', 'Automatic', 'Semi-Automatic'] },
   { label: 'Doors', name: 'doors', type: 'number' },
   { label: 'Owners', name: 'owner_count', type: 'number', full: true },
+];
+
+const VEHICLE_PRESETS = [
+  {
+    label: 'Executive Sedan',
+    data: {
+      brand: 'Toyota',
+      model_name: 'Camry',
+      year: 2020,
+      engine_size: 2.5,
+      fuel_type: 'Petrol',
+      transmission: 'Automatic',
+      mileage: 30000,
+      doors: 4,
+      owner_count: 1,
+    },
+  },
+  {
+    label: 'Urban EV',
+    data: {
+      brand: 'Tesla',
+      model_name: 'Model 3',
+      year: 2022,
+      engine_size: 0.0,
+      fuel_type: 'Electric',
+      transmission: 'Automatic',
+      mileage: 18000,
+      doors: 4,
+      owner_count: 1,
+    },
+  },
+  {
+    label: 'Family Diesel',
+    data: {
+      brand: 'Volkswagen',
+      model_name: 'Passat',
+      year: 2018,
+      engine_size: 2.0,
+      fuel_type: 'Diesel',
+      transmission: 'Manual',
+      mileage: 72000,
+      doors: 4,
+      owner_count: 2,
+    },
+  },
 ];
 
 function ModelCore() {
@@ -219,7 +262,9 @@ function App() {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [user, setUser] = useState(null);
+  const [activePreset, setActivePreset] = useState('Executive Sedan');
   const [showAuthModal, setShowAuthModal] = useState(null);
   const [authData, setAuthData] = useState({ username: '', email: '', password: '' });
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -236,6 +281,13 @@ function App() {
     if (!prediction?.predicted_price) return null;
     return Math.round(prediction.predicted_price * 0.92);
   }, [prediction]);
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(value);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -266,6 +318,7 @@ function App() {
     event.preventDefault();
     if (!user) {
       setError('Sign in to run protected predictions.');
+      setNotice(null);
       setShowAuthModal('login');
       return;
     }
@@ -277,15 +330,18 @@ function App() {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.post(`${API_BASE}/predict`, formData, { headers });
       setPrediction(response.data);
+      setNotice('Valuation completed and saved to your history.');
       fetchHistory(token);
-    } catch {
-      setError('Prediction failed. Verify backend is running and your token is valid.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Prediction failed. Verify backend is running and your token is valid.');
+      setNotice(null);
     } finally {
       setLoading(false);
     }
   };
   const handleChange = (event) => {
     const { name, value } = event.target;
+    setActivePreset(null);
     setFormData((prev) => ({
       ...prev,
       [name]: ['year', 'mileage', 'doors', 'owner_count'].includes(name)
@@ -309,11 +365,22 @@ function App() {
         headers: { Authorization: `Bearer ${response.data.access_token}` },
       });
       setUser(userResponse.data);
+      fetchHistory(response.data.access_token);
+      setNotice(showAuthModal === 'login' ? 'Signed in successfully.' : 'Account created and signed in.');
+      setError(null);
       setAuthData({ username: '', email: '', password: '' });
       setShowAuthModal(null);
-    } catch {
-      alert('Authentication failed. Please check your credentials and backend status.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Authentication failed. Please check your credentials and backend status.');
+      setNotice(null);
     }
+  };
+
+  const applyPreset = (preset) => {
+    setFormData(preset.data);
+    setActivePreset(preset.label);
+    setError(null);
+    setNotice(`Loaded ${preset.label} preset.`);
   };
   const handleSendMessage = async (event) => {
     event.preventDefault();
@@ -420,12 +487,29 @@ function App() {
               className="relative"
             >
               <div className="absolute -inset-4 bg-[var(--accent-glow)] rounded-[40px] blur-3xl opacity-30 animate-pulse" />
-              <div className="surface p-2 rounded-[40px] border-2 border-white/5">
-                <img 
-                  src="file:///C:/Users/raavi/.gemini/antigravity/brain/3aa6198c-8611-4d7a-bec6-142214e89896/premium_car_valuation_hero_1773244872211.png" 
-                  alt="Premium AI Illustration" 
-                  className="w-full h-auto rounded-[32px] object-cover shadow-2xl"
-                />
+              <div className="surface hero-visual p-6 md:p-8 rounded-[40px] border-2 border-white/5">
+                <div className="hero-grid" />
+                <div className="relative z-10">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <span className="hero-pill">Live Inference</span>
+                    <span className="hero-pill">AI + Market Signals</span>
+                    <span className="hero-pill">Dealer-Ready Output</span>
+                  </div>
+                  <div className="h-[320px] md:h-[360px]">
+                    <CarExperience />
+                  </div>
+                  <div className="mt-4 grid sm:grid-cols-3 gap-3">
+                    {STATS.map(({ label, value, icon: Icon }) => (
+                      <div key={label} className="hero-stat">
+                        <Icon size={14} className="text-[var(--accent)]" />
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] font-bold">{label}</p>
+                          <p className="text-sm font-semibold text-[var(--text-main)]">{value}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -446,6 +530,22 @@ function App() {
                 </div>
                 <div className="px-4 py-2 rounded-full bg-[var(--bg-main)] border border-[var(--surface-border)] text-[10px] font-black tracking-widest text-[var(--text-soft)] uppercase">
                   {user ? 'Authenticated' : 'Login Required'}
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <p className="text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] uppercase mb-3">Quick Presets</p>
+                <div className="preset-grid">
+                  {VEHICLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => applyPreset(preset)}
+                      className={`preset-chip ${activePreset === preset.label ? 'active' : ''}`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -493,6 +593,7 @@ function App() {
                     )}
                   </button>
                   {error && <p className="text-center text-red-400 mt-4 font-semibold text-sm">{error}</p>}
+                  {notice && <p className="text-center text-emerald-300 mt-3 font-semibold text-sm">{notice}</p>}
                 </div>
               </form>
             </motion.div>
@@ -509,17 +610,17 @@ function App() {
                   <div className="flex-1 flex flex-col">
                     <div className="eyebrow mb-4">ESTIMATED MARKET VALUE</div>
                     <h3 className="font-display text-6xl font-bold text-[var(--text-main)] tracking-tight">
-                      ${prediction.predicted_price.toLocaleString()}
+                      {formatCurrency(prediction.predicted_price)}
                     </h3>
                     
                     <div className="mt-10 grid grid-cols-2 gap-4">
                       <div className="stat-card">
                         <p className="stat-label">Dealer Trade-In</p>
-                        <p className="stat-value">${estimatedTradeIn?.toLocaleString()}</p>
+                        <p className="stat-value">{estimatedTradeIn ? formatCurrency(estimatedTradeIn) : '--'}</p>
                       </div>
                       <div className="stat-card">
                         <p className="stat-label">Private Party</p>
-                        <p className="stat-value">${prediction.predicted_price.toLocaleString()}</p>
+                        <p className="stat-value">{formatCurrency(prediction.predicted_price)}</p>
                       </div>
                     </div>
 
@@ -611,7 +712,7 @@ function App() {
                     <div className="mt-8 flex items-center justify-between">
                       <span className="text-xs font-bold text-[var(--text-soft)] uppercase">Final Estimate</span>
                       <span className="text-2xl font-bold text-[var(--text-main)] tracking-tighter">
-                        ${item.price.toLocaleString()}
+                        {formatCurrency(item.price)}
                       </span>
                     </div>
                   </motion.div>
