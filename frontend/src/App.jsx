@@ -161,11 +161,12 @@ function AuthModal({ mode, authData, setAuthData, onClose, onSubmit, onSwitch })
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="form-label">Username</label>
+            <label className="form-label">Username or Email</label>
             <input
               required
               className="input"
               value={authData.username}
+              placeholder="Enter username or email"
               onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
             />
           </div>
@@ -423,7 +424,7 @@ function App() {
       const endpoint = showAuthModal === 'login' ? '/token' : '/register';
       const payload =
         showAuthModal === 'login'
-          ? new URLSearchParams({ username: authData.username, password: authData.password })
+          ? new URLSearchParams({ username: authData.username.trim(), password: authData.password })
           : authData;
       const response = await axios.post(`${API_BASE}${endpoint}`, payload);
       localStorage.setItem('token', response.data.access_token);

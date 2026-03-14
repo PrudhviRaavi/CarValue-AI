@@ -111,7 +111,10 @@ async def register(user: UserCreate, db: Session = Depends(database.get_db)):
 
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    identifier = form_data.username.strip()
+    user = db.query(models.User).filter(
+        (models.User.username == identifier) | (models.User.email == identifier)
+    ).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
