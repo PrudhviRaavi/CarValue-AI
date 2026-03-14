@@ -138,6 +138,387 @@ const HERO_METRICS = [
   { label: 'Protected history', value: '100%' },
 ];
 
+const DASHBOARD_ACTIONS = [
+  {
+    icon: Sparkles,
+    title: 'Run fresh valuation',
+    desc: 'Update vehicle inputs and generate a new saved estimate.',
+    href: '#workspace',
+  },
+  {
+    icon: Clock,
+    title: 'Review saved history',
+    desc: 'Compare earlier quotes before you talk to dealers or buyers.',
+    href: '#history',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Ask valuation copilot',
+    desc: 'Get guidance on pricing, mileage impact, and resale strategy.',
+    action: 'assistant',
+  },
+];
+
+const DASHBOARD_GUIDANCE = [
+  'Lead with the most important numbers first so the dashboard answers “where do I stand now?” immediately.',
+  'Keep related actions together so the next step is obvious after each valuation or review.',
+  'Add context around every number using history, averages, or recent movement instead of isolated values.',
+];
+
+function DashboardStatCard({ label, value, hint }) {
+  return (
+    <div className="surface dashboard-stat-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{hint}</small>
+    </div>
+  );
+}
+
+function DashboardPage({
+  user,
+  history,
+  latestHistory,
+  averageEstimate,
+  brandsTracked,
+  prediction,
+  estimatedTradeIn,
+  formatCurrency,
+  formData,
+  activeBrand,
+  handleBrandSelect,
+  handleChange,
+  handlePredict,
+  loading,
+  error,
+  notice,
+  onOpenAssistant,
+  sessionMode,
+}) {
+  const latestValue = prediction?.predicted_price ?? latestHistory?.price ?? null;
+  const latestSavedDate = latestHistory ? new Date(latestHistory.created_at).toLocaleDateString() : 'No saved estimate yet';
+  const latestContext =
+    latestHistory && averageEstimate
+      ? latestHistory.price >= averageEstimate
+        ? `${formatCurrency(latestHistory.price - averageEstimate)} above your dashboard average`
+        : `${formatCurrency(averageEstimate - latestHistory.price)} below your dashboard average`
+      : 'Run at least one estimate to establish your personal benchmark';
+
+  return (
+    <main id="top" className="dashboard-main">
+      <section className="dashboard-hero-section">
+        <div className="container dashboard-hero-grid">
+          <div className="dashboard-hero-copy">
+            <p className="eyebrow">Dashboard Overview</p>
+            <h1 className="dashboard-title">Welcome back, {user.username}.</h1>
+            <p className="dashboard-copy">
+              This workspace now follows core dashboard best practices: a clear purpose, only the most important metrics,
+              grouped actions, and context around your latest values so decisions are faster.
+            </p>
+
+            <div className="dashboard-hero-actions">
+              <a href="#workspace" className="button-primary">
+                Start valuation
+                <ArrowRight size={16} />
+              </a>
+              <button type="button" className="button-ghost" onClick={onOpenAssistant}>
+                <MessageCircle size={16} />
+                Open assistant
+              </button>
+            </div>
+
+            <div className="dashboard-guidance-list">
+              {DASHBOARD_GUIDANCE.map((item) => (
+                <div key={item} className="dashboard-guidance-item">
+                  <CheckCircle size={16} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside className="surface dashboard-summary-card" id="account">
+            <p className="mini-label mb-2">Account Snapshot</p>
+            <h2>Everything important in one place</h2>
+            <p>
+              Your dashboard groups the current estimate workflow, saved valuation history, and account context so the
+              next action is obvious.
+            </p>
+
+            <div className="dashboard-summary-list">
+              <div className="dashboard-summary-row">
+                <span>Email</span>
+                <strong>{user.email}</strong>
+              </div>
+              <div className="dashboard-summary-row">
+                <span>Session mode</span>
+                <strong>{sessionMode}</strong>
+              </div>
+              <div className="dashboard-summary-row">
+                <span>Latest saved activity</span>
+                <strong>{latestSavedDate}</strong>
+              </div>
+            </div>
+
+            <div className="dashboard-context-card">
+              <p className="mini-label mb-2">Latest context</p>
+              <p>{latestContext}</p>
+            </div>
+          </aside>
+        </div>
+
+        <div className="container dashboard-stat-grid">
+          <DashboardStatCard
+            label="Total valuations"
+            value={history.length}
+            hint="All saved estimates in your account"
+          />
+          <DashboardStatCard
+            label="Latest estimate"
+            value={latestValue ? formatCurrency(latestValue) : '--'}
+            hint="Most recent value available in your workspace"
+          />
+          <DashboardStatCard
+            label="Average estimate"
+            value={averageEstimate ? formatCurrency(averageEstimate) : '--'}
+            hint="Rounded average across your saved history"
+          />
+          <DashboardStatCard
+            label="Brands tracked"
+            value={brandsTracked}
+            hint="Unique brands already explored"
+          />
+        </div>
+      </section>
+
+      <section className="section-shell" id="workspace">
+        <div className="container dashboard-workspace-grid">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="surface dashboard-card dashboard-workspace-card"
+          >
+            <div className="dashboard-section-heading">
+              <div>
+                <p className="mini-label mb-2">Primary Workspace</p>
+                <h2 className="hero-card-title">Run a new valuation</h2>
+              </div>
+              <span className="status-pill">Live estimate flow</span>
+            </div>
+
+            <div className="brand-cloud">
+              {BRAND_OPTIONS.map((brand) => (
+                <button
+                  key={brand}
+                  type="button"
+                  className={`brand-chip ${activeBrand === brand ? 'active' : ''}`}
+                  onClick={() => handleBrandSelect(brand)}
+                >
+                  {brand}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handlePredict} className="form-grid">
+              {INPUT_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="form-label">{field.label}</label>
+                  {field.options ? (
+                    <select
+                      name={field.name}
+                      value={formData[field.name]}
+                      onChange={handleChange}
+                      className="input"
+                    >
+                      {field.options.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      name={field.name}
+                      type={field.type || 'text'}
+                      step={field.step}
+                      value={formData[field.name]}
+                      onChange={handleChange}
+                      className="input"
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                    />
+                  )}
+                </div>
+              ))}
+
+              <div className="form-actions-row">
+                <button type="submit" disabled={loading} className="button-primary w-full justify-center">
+                  {loading ? (
+                    <>
+                      <span className="loader" />
+                      Calculating estimate
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={18} />
+                      Get valuation
+                    </>
+                  )}
+                </button>
+
+                {error && <div className="info-banner error">{error}</div>}
+                {notice && <div className="info-banner success">{notice}</div>}
+              </div>
+            </form>
+
+            <ResultPanel
+              prediction={prediction}
+              estimatedTradeIn={estimatedTradeIn}
+              formatCurrency={formatCurrency}
+            />
+          </motion.div>
+
+          <div className="dashboard-side-stack">
+            <div className="surface dashboard-card">
+              <div className="dashboard-section-heading compact">
+                <div>
+                  <p className="mini-label mb-2">Quick Actions</p>
+                  <h3>What you should do next</h3>
+                </div>
+              </div>
+
+              <div className="dashboard-action-grid">
+                {DASHBOARD_ACTIONS.map(({ icon: Icon, title, desc, href, action }) =>
+                  action === 'assistant' ? (
+                    <button key={title} type="button" className="dashboard-action-card" onClick={onOpenAssistant}>
+                      <span className="dashboard-action-icon">
+                        <Icon size={18} />
+                      </span>
+                      <strong>{title}</strong>
+                      <span>{desc}</span>
+                    </button>
+                  ) : (
+                    <a key={title} href={href} className="dashboard-action-card">
+                      <span className="dashboard-action-icon">
+                        <Icon size={18} />
+                      </span>
+                      <strong>{title}</strong>
+                      <span>{desc}</span>
+                    </a>
+                  ),
+                )}
+              </div>
+            </div>
+
+            <div className="surface dashboard-card">
+              <div className="dashboard-section-heading compact">
+                <div>
+                  <p className="mini-label mb-2">Account Health</p>
+                  <h3>Protected account details</h3>
+                </div>
+              </div>
+
+              <div className="dashboard-summary-list">
+                <div className="dashboard-summary-row">
+                  <span>Username</span>
+                  <strong>{user.username}</strong>
+                </div>
+                <div className="dashboard-summary-row">
+                  <span>Email</span>
+                  <strong>{user.email}</strong>
+                </div>
+                <div className="dashboard-summary-row">
+                  <span>Dealer benchmark</span>
+                  <strong>{estimatedTradeIn ? formatCurrency(estimatedTradeIn) : '--'}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-shell" id="history">
+        <div className="container">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Saved History</p>
+              <h2>Your latest valuation activity</h2>
+            </div>
+            <p>
+              The dashboard keeps history close to the active workflow so recent numbers always have context and can be
+              compared quickly.
+            </p>
+          </div>
+
+          <div className="surface dashboard-history-board">
+            {history.length > 0 ? (
+              sortedHistory.slice(0, 6).map((item) => (
+                <div key={item.id} className="dashboard-history-row">
+                  <div>
+                    <span className="history-year">{item.year}</span>
+                  </div>
+                  <div>
+                    <strong>
+                      {item.brand} {item.model_name}
+                    </strong>
+                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="dashboard-history-price">{formatCurrency(item.price)}</div>
+                </div>
+              ))
+            ) : (
+              <div className="dashboard-empty-state">
+                <CheckCircle size={18} />
+                <span>Your dashboard history will appear here after the first successful valuation.</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="section-shell muted-shell" id="insights">
+        <div className="container dashboard-insights-grid">
+          <div className="surface dashboard-card">
+            <div className="dashboard-section-heading compact">
+              <div>
+                <p className="mini-label mb-2">Market Context</p>
+                <h3>Why these dashboard sections exist</h3>
+              </div>
+            </div>
+
+            <div className="dashboard-note-list">
+              {MARKET_SIGNALS.map((item) => (
+                <div key={item.title} className="dashboard-note-card">
+                  <strong>{item.title}</strong>
+                  <span>{item.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="surface dashboard-card">
+            <div className="dashboard-section-heading compact">
+              <div>
+                <p className="mini-label mb-2">Seller Checklist</p>
+                <h3>Actions worth taking before you sell</h3>
+              </div>
+            </div>
+
+            <div className="dashboard-guidance-list compact">
+              {SELLER_CHECKLIST.map((item) => (
+                <div key={item} className="dashboard-guidance-item">
+                  <CheckCircle size={16} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function AuthPage({
   mode,
   authData,
@@ -431,11 +812,27 @@ function App() {
   const chatEndRef = useRef(null);
 
   const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
+  const sessionMode = localStorage.getItem('token') ? 'Remembered device' : sessionStorage.getItem('token') ? 'Session only' : 'Signed out';
 
   const estimatedTradeIn = useMemo(() => {
     if (!prediction?.predicted_price) return null;
     return Math.round(prediction.predicted_price * 0.92);
   }, [prediction]);
+
+  const sortedHistory = useMemo(
+    () => [...history].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()),
+    [history],
+  );
+
+  const latestHistory = sortedHistory[0] ?? null;
+
+  const averageEstimate = useMemo(() => {
+    if (!history.length) return null;
+    const total = history.reduce((sum, item) => sum + item.price, 0);
+    return Math.round(total / history.length);
+  }, [history]);
+
+  const brandsTracked = useMemo(() => new Set(history.map((item) => item.brand)).size, [history]);
 
   const activeBrand = useMemo(() => formData.brand, [formData.brand]);
 
@@ -527,6 +924,16 @@ function App() {
     setAuthView(mode);
     setAuthError(null);
     setAuthNotice(null);
+    setError(null);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    setUser(null);
+    setHistory([]);
+    setPrediction(null);
+    setNotice(null);
     setError(null);
   };
 
@@ -649,10 +1056,21 @@ function App() {
           </a>
 
           <nav className="header-nav">
-            <a href="#valuation">Valuation</a>
-            <a href="#market">Market Drivers</a>
-            <a href="#history">History</a>
-            <a href="#faq">FAQ</a>
+            {user ? (
+              <>
+                <a href="#top">Overview</a>
+                <a href="#workspace">Workspace</a>
+                <a href="#history">History</a>
+                <a href="#account">Account</a>
+              </>
+            ) : (
+              <>
+                <a href="#valuation">Valuation</a>
+                <a href="#market">Market Drivers</a>
+                <a href="#history">History</a>
+                <a href="#faq">FAQ</a>
+              </>
+            )}
           </nav>
 
           {user ? (
@@ -662,11 +1080,7 @@ function App() {
                 {user.username}
               </div>
               <button
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  sessionStorage.removeItem('token');
-                  setUser(null);
-                }}
+                onClick={handleSignOut}
                 className="button-ghost"
                 type="button"
               >
@@ -683,6 +1097,28 @@ function App() {
         </div>
       </header>
 
+      {user ? (
+        <DashboardPage
+          user={user}
+          history={history}
+          latestHistory={latestHistory}
+          averageEstimate={averageEstimate}
+          brandsTracked={brandsTracked}
+          prediction={prediction}
+          estimatedTradeIn={estimatedTradeIn}
+          formatCurrency={formatCurrency}
+          formData={formData}
+          activeBrand={activeBrand}
+          handleBrandSelect={handleBrandSelect}
+          handleChange={handleChange}
+          handlePredict={handlePredict}
+          loading={loading}
+          error={error}
+          notice={notice}
+          onOpenAssistant={() => setIsChatOpen(true)}
+          sessionMode={sessionMode}
+        />
+      ) : (
       <main id="top">
         <section className="hero-section">
           <div className="container hero-layout">
@@ -996,6 +1432,7 @@ function App() {
           </div>
         </section>
       </main>
+      )}
 
       <footer className="site-footer">
         <div className="container footer-grid">
