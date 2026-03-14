@@ -178,6 +178,7 @@ function DashboardStatCard({ label, value, hint }) {
 function DashboardPage({
   user,
   history,
+  sortedHistory,
   latestHistory,
   averageEstimate,
   brandsTracked,
@@ -1101,6 +1102,7 @@ function App() {
         <DashboardPage
           user={user}
           history={history}
+          sortedHistory={sortedHistory}
           latestHistory={latestHistory}
           averageEstimate={averageEstimate}
           brandsTracked={brandsTracked}
