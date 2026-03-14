@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   ArrowRight,
   Car,
   CheckCircle,
@@ -137,76 +138,164 @@ const HERO_METRICS = [
   { label: 'Protected history', value: '100%' },
 ];
 
-function AuthModal({ mode, authData, setAuthData, onClose, onSubmit, onSwitch }) {
+function AuthPage({
+  mode,
+  authData,
+  setAuthData,
+  authError,
+  authNotice,
+  authLoading,
+  onBack,
+  onSubmit,
+  onSwitch,
+}) {
   const isLogin = mode === 'login';
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 backdrop-blur-sm p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="surface w-full max-w-md p-7"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div>
+    <div className="auth-page">
+      <div className="page-noise" />
+      <header className="auth-header container">
+        <a href="#top" className="brand-mark">
+          <span className="brand-badge">
+            <Car size={18} />
+          </span>
+          <span>
+            <strong>CarValue AI</strong>
+            <small>Secure access</small>
+          </span>
+        </a>
+        <button type="button" className="button-ghost" onClick={onBack}>
+          <ArrowLeft size={16} />
+          Back to valuation
+        </button>
+      </header>
+
+      <main className="auth-main container">
+        <motion.section
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="surface auth-panel"
+        >
+          <div className="auth-intro">
             <p className="mini-label mb-2">Account Access</p>
-            <h2 className="font-display text-3xl text-[var(--text-main)]">
-              {isLogin ? 'Welcome back' : 'Create your account'}
-            </h2>
-          </div>
-          <button onClick={onClose} className="icon-button" type="button">
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="form-label">Username or Email</label>
-            <input
-              required
-              className="input"
-              value={authData.username}
-              placeholder="Enter username or email"
-              onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
-            />
+            <h1 className="font-display auth-title">{isLogin ? 'Welcome back' : 'Create your account'}</h1>
+            <p className="auth-copy">
+              {isLogin
+                ? 'Sign in to unlock saved valuations, history tracking, and protected prediction flows.'
+                : 'Register once to store your pricing history and return anytime with a secure account.'}
+            </p>
           </div>
 
-          {!isLogin && (
+          <form onSubmit={onSubmit} className="auth-form">
+            {isLogin ? (
+              <div>
+                <label className="form-label">Username or Email</label>
+                <input
+                  required
+                  className="input"
+                  value={authData.identifier}
+                  placeholder="Enter username or email"
+                  onChange={(e) => setAuthData({ ...authData, identifier: e.target.value })}
+                />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="form-label">Username</label>
+                  <input
+                    required
+                    className="input"
+                    minLength={3}
+                    value={authData.username}
+                    placeholder="Choose a username"
+                    onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    required
+                    className="input"
+                    value={authData.email}
+                    placeholder="you@example.com"
+                    onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
             <div>
-              <label className="form-label">Email</label>
+              <label className="form-label">Password</label>
               <input
-                type="email"
+                type="password"
                 required
+                minLength={8}
                 className="input"
-                value={authData.email}
-                onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
+                value={authData.password}
+                placeholder="Minimum 8 characters"
+                onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
               />
             </div>
-          )}
 
-          <div>
-            <label className="form-label">Password</label>
-            <input
-              type="password"
-              required
-              className="input"
-              value={authData.password}
-              onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
-            />
-          </div>
+            {!isLogin && (
+              <div>
+                <label className="form-label">Confirm Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  className="input"
+                  value={authData.confirmPassword}
+                  placeholder="Re-enter password"
+                  onChange={(e) => setAuthData({ ...authData, confirmPassword: e.target.value })}
+                />
+              </div>
+            )}
 
-          <button type="submit" className="button-primary w-full justify-center">
-            {isLogin ? 'Sign in' : 'Register'}
-          </button>
-        </form>
+            {isLogin ? (
+              <label className="auth-check-row">
+                <input
+                  type="checkbox"
+                  checked={authData.rememberMe}
+                  onChange={(e) => setAuthData({ ...authData, rememberMe: e.target.checked })}
+                />
+                Keep me signed in on this device
+              </label>
+            ) : (
+              <label className="auth-check-row">
+                <input
+                  type="checkbox"
+                  checked={authData.acceptTerms}
+                  onChange={(e) => setAuthData({ ...authData, acceptTerms: e.target.checked })}
+                />
+                I agree to basic account and usage terms
+              </label>
+            )}
 
-        <p className="text-sm text-[var(--text-muted)] mt-5">
-          {isLogin ? 'No account yet?' : 'Already have an account?'}{' '}
-          <button type="button" className="link-button" onClick={onSwitch}>
-            {isLogin ? 'Create one' : 'Sign in'}
-          </button>
-        </p>
-      </motion.div>
+            {authError && <div className="info-banner error">{authError}</div>}
+            {authNotice && <div className="info-banner success">{authNotice}</div>}
+
+            <button type="submit" className="button-primary w-full justify-center" disabled={authLoading}>
+              {authLoading ? (
+                <>
+                  <span className="loader" />
+                  {isLogin ? 'Signing in' : 'Creating account'}
+                </>
+              ) : (
+                <>{isLogin ? 'Sign in' : 'Create account'}</>
+              )}
+            </button>
+          </form>
+
+          <p className="auth-switch-copy">
+            {isLogin ? 'No account yet?' : 'Already have an account?'}{' '}
+            <button type="button" className="link-button" onClick={onSwitch}>
+              {isLogin ? 'Create one' : 'Sign in'}
+            </button>
+          </p>
+        </motion.section>
+      </main>
     </div>
   );
 }
@@ -316,8 +405,19 @@ function App() {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [user, setUser] = useState(null);
-  const [showAuthModal, setShowAuthModal] = useState(null);
-  const [authData, setAuthData] = useState({ username: '', email: '', password: '' });
+  const [authView, setAuthView] = useState(null);
+  const [authData, setAuthData] = useState({
+    identifier: '',
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    rememberMe: true,
+    acceptTerms: false,
+  });
+  const [authError, setAuthError] = useState(null);
+  const [authNotice, setAuthNotice] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
@@ -329,6 +429,8 @@ function App() {
   const [currentMessage, setCurrentMessage] = useState('');
   const [openFaq, setOpenFaq] = useState(0);
   const chatEndRef = useRef(null);
+
+  const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
   const estimatedTradeIn = useMemo(() => {
     if (!prediction?.predicted_price) return null;
@@ -345,7 +447,7 @@ function App() {
     }).format(value);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (token) {
       axios
         .get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
@@ -353,7 +455,10 @@ function App() {
           setUser(res.data);
           fetchHistory(token);
         })
-        .catch(() => localStorage.removeItem('token'));
+        .catch(() => {
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
+        });
     }
   }, []);
 
@@ -377,7 +482,7 @@ function App() {
     if (!user) {
       setError('Sign in to store and generate protected valuations.');
       setNotice(null);
-      setShowAuthModal('login');
+      setAuthView('login');
       return;
     }
 
@@ -386,7 +491,7 @@ function App() {
     setPrediction(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getStoredToken();
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.post(`${API_BASE}/predict`, formData, { headers });
       setPrediction(response.data);
@@ -418,28 +523,76 @@ function App() {
     setError(null);
   };
 
+  const openAuthPage = (mode = 'login') => {
+    setAuthView(mode);
+    setAuthError(null);
+    setAuthNotice(null);
+    setError(null);
+  };
+
   const handleAuth = async (event) => {
     event.preventDefault();
+    const isLogin = authView === 'login';
+
+    if (!isLogin) {
+      if (authData.password !== authData.confirmPassword) {
+        setAuthError('Passwords do not match.');
+        return;
+      }
+
+      if (!authData.acceptTerms) {
+        setAuthError('Please accept the terms to create an account.');
+        return;
+      }
+    }
+
+    setAuthLoading(true);
+    setAuthError(null);
+    setAuthNotice(null);
+
     try {
-      const endpoint = showAuthModal === 'login' ? '/token' : '/register';
+      const endpoint = isLogin ? '/token' : '/register';
       const payload =
-        showAuthModal === 'login'
-          ? new URLSearchParams({ username: authData.username.trim(), password: authData.password })
-          : authData;
+        isLogin
+          ? new URLSearchParams({ username: authData.identifier.trim(), password: authData.password })
+          : {
+              username: authData.username.trim(),
+              email: authData.email.trim(),
+              password: authData.password,
+            };
       const response = await axios.post(`${API_BASE}${endpoint}`, payload);
-      localStorage.setItem('token', response.data.access_token);
+
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+
+      if (authData.rememberMe || !isLogin) {
+        localStorage.setItem('token', response.data.access_token);
+      } else {
+        sessionStorage.setItem('token', response.data.access_token);
+      }
+
       const userResponse = await axios.get(`${API_BASE}/users/me`, {
         headers: { Authorization: `Bearer ${response.data.access_token}` },
       });
       setUser(userResponse.data);
       fetchHistory(response.data.access_token);
-      setNotice(showAuthModal === 'login' ? 'Signed in successfully.' : 'Account created and signed in.');
+      setNotice(isLogin ? 'Signed in successfully.' : 'Account created and signed in.');
       setError(null);
-      setAuthData({ username: '', email: '', password: '' });
-      setShowAuthModal(null);
+      setAuthData({
+        identifier: '',
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        rememberMe: true,
+        acceptTerms: false,
+      });
+      setAuthView(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Authentication failed. Please check your credentials and backend status.');
-      setNotice(null);
+      setAuthError(err.response?.data?.detail || 'Authentication failed. Please check your credentials and backend status.');
+      setAuthNotice(null);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -459,17 +612,29 @@ function App() {
     }
   };
 
+  if (authView) {
+    return (
+      <AuthPage
+        mode={authView}
+        authData={authData}
+        setAuthData={setAuthData}
+        authError={authError}
+        authNotice={authNotice}
+        authLoading={authLoading}
+        onBack={() => setAuthView(null)}
+        onSubmit={handleAuth}
+        onSwitch={() => {
+          setAuthView(authView === 'login' ? 'register' : 'login');
+          setAuthError(null);
+          setAuthNotice(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app-shell">
       <div className="page-noise" />
-
-      <div className="top-strip">
-        <div className="container top-strip-inner">
-          <span>Free valuation workspace</span>
-          <span>Saved account history</span>
-          <span>Data-backed pricing summary</span>
-        </div>
-      </div>
 
       <header className="site-header">
         <div className="container site-header-inner">
@@ -499,6 +664,7 @@ function App() {
               <button
                 onClick={() => {
                   localStorage.removeItem('token');
+                  sessionStorage.removeItem('token');
                   setUser(null);
                 }}
                 className="button-ghost"
@@ -509,7 +675,7 @@ function App() {
               </button>
             </div>
           ) : (
-            <button onClick={() => setShowAuthModal('login')} className="button-primary" type="button">
+            <button onClick={() => openAuthPage('login')} className="button-primary header-signin-button" type="button">
               <Lock size={16} />
               Sign in
             </button>
@@ -534,6 +700,12 @@ function App() {
                   Start valuation
                   <ArrowRight size={16} />
                 </a>
+                {!user && (
+                  <button type="button" className="button-primary" onClick={() => openAuthPage('login')}>
+                    <Lock size={16} />
+                    Sign in
+                  </button>
+                )}
                 <a href="#market" className="button-ghost">
                   See value drivers
                 </a>
@@ -809,7 +981,6 @@ function App() {
                 <p className="eyebrow">FAQ</p>
                 <h2>Common valuation questions</h2>
               </div>
-              <p>These answers are written for your current app flow, not copied from the reference site.</p>
             </div>
 
             <div className="faq-list">
@@ -851,7 +1022,7 @@ function App() {
           </div>
 
           <div className="footer-meta">
-            <span>© 2026 Rank-A Labs</span>
+            <span>© 2026 CarValue AI.All Rights Reserved</span>
             <a href="https://github.com/PrudhviRaavi/CarValue-AI" className="footer-icon-link">
               <Github size={18} />
             </a>
@@ -907,16 +1078,6 @@ function App() {
         </button>
       </div>
 
-      {showAuthModal && (
-        <AuthModal
-          mode={showAuthModal}
-          authData={authData}
-          setAuthData={setAuthData}
-          onClose={() => setShowAuthModal(null)}
-          onSubmit={handleAuth}
-          onSwitch={() => setShowAuthModal(showAuthModal === 'login' ? 'register' : 'login')}
-        />
-      )}
     </div>
   );
 }

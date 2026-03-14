@@ -79,6 +79,8 @@ a {
 }
 
 .top-strip {
+  position: relative;
+  z-index: 30;
   border-bottom: 1px solid rgba(17, 32, 51, 0.08);
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(14px);
@@ -97,10 +99,88 @@ a {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 80;
+  isolation: isolate;
   background: rgba(245, 247, 251, 0.82);
   border-bottom: 1px solid rgba(17, 32, 51, 0.06);
   backdrop-filter: blur(16px);
+}
+
+.site-header .button-primary,
+.header-actions,
+.header-signin-button {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.auth-page {
+  position: relative;
+  min-height: 100vh;
+  padding: 1.5rem 0 2rem;
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.auth-main {
+  padding-top: 2.5rem;
+}
+
+.auth-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 1.4rem;
+  padding: 1.5rem;
+}
+
+.auth-intro {
+  padding: 1rem;
+  border-radius: 22px;
+  background: linear-gradient(160deg, rgba(15, 118, 110, 0.1), rgba(245, 158, 11, 0.08));
+  border: 1px solid var(--surface-border);
+}
+
+.auth-title {
+  margin: 0;
+  font-size: clamp(2rem, 4.6vw, 3rem);
+  line-height: 1.04;
+}
+
+.auth-copy {
+  margin-top: 0.8rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+
+.auth-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.auth-check-row input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.auth-switch-copy {
+  margin: 0.6rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
 }
 
 .site-header-inner {
@@ -1041,7 +1121,8 @@ a {
   .hero-layout,
   .two-column-shell,
   .seller-shell,
-  .faq-shell {
+  .faq-shell,
+  .auth-panel {
     grid-template-columns: 1fr;
   }
 
@@ -1089,5 +1170,10 @@ a {
   .button-ghost {
     width: 100%;
     justify-content: center;
+  }
+
+  .auth-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
