@@ -47,11 +47,13 @@ npm run lint
 
 ## API Connection
 
-The app currently targets:
+The app uses Vite env config for backend API URL.
 
-`http://localhost:8000`
+Create `frontend/.env` (or copy from `.env.example`) and set:
 
-This base URL is configured in `src/App.jsx`.
+`VITE_API_BASE_URL=http://127.0.0.1:8000`
+
+If this value is not set, the app falls back to `http://localhost:8000`.
 
 ## Key Files
 
