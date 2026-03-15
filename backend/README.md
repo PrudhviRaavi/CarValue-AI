@@ -64,8 +64,13 @@ API docs:
 - `SECRET_KEY`
 - `ALGORITHM`
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
+- `DATABASE_URL` (optional; defaults to local `backend/car_value_ai.db`)
 
 Create a local `.env` in `backend/` if needed.
+
+Example for storing the SQLite file outside the repo:
+
+`DATABASE_URL=sqlite:///C:/Users/your-user/AppData/Local/CarValueAI/car_value_ai.db`
 
 ## Notes
 
