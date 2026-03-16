@@ -805,10 +805,11 @@ function App() {
   const [chatMessages, setChatMessages] = useState([
     {
       role: 'ai',
-      text: 'Ask about resale strategy, mileage impact, or how to position your asking price.',
+      text: 'Ask me for real insights like: my latest valuation, my average estimate, Toyota market stats, or mileage impact.',
     },
   ]);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const chatEndRef = useRef(null);
 
@@ -1006,17 +1007,36 @@ function App() {
 
   const handleSendMessage = async (event) => {
     event.preventDefault();
-    if (!currentMessage.trim()) return;
+    if (!currentMessage.trim() || chatLoading) return;
 
-    const nextMessages = [...chatMessages, { role: 'user', text: currentMessage }];
+    const message = currentMessage.trim();
+    const nextMessages = [...chatMessages, { role: 'user', text: message }];
     setChatMessages(nextMessages);
     setCurrentMessage('');
+    setChatLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE}/chat`, { message: currentMessage });
-      setChatMessages([...nextMessages, { role: 'ai', text: response.data.reply }]);
-    } catch {
-      setChatMessages([...nextMessages, { role: 'ai', text: "Sorry, I'm having trouble connecting right now." }]);
+      const token = getStoredToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      const response = await axios.post(`${API_BASE}/chat`, { message }, { headers });
+
+      const reply = response.data?.reply || 'I could not generate a response for that message.';
+      const dataPoints = Array.isArray(response.data?.data_points) ? response.data.data_points : [];
+      const dataBlock = dataPoints.length ? `\n\n${dataPoints.map((item) => `- ${item}`).join('\n')}` : '';
+      const llmUsed = Boolean(response.data?.llm_used);
+      const llmError = String(response.data?.llm_error || '');
+      const llmNote = !llmUsed && /429|rate|quota/i.test(llmError)
+        ? '\n\nNote: Gemini is rate-limited right now, so this response is from local data mode.'
+        : '';
+
+      setChatMessages([...nextMessages, { role: 'ai', text: `${reply}${dataBlock}${llmNote}` }]);
+    } catch (err) {
+      const fallbackMessage = err.response?.status === 400
+        ? 'Please enter a valid message so I can analyze it.'
+        : "Sorry, I'm having trouble connecting right now.";
+      setChatMessages([...nextMessages, { role: 'ai', text: fallbackMessage }]);
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -1501,10 +1521,11 @@ function App() {
                 <input
                   value={currentMessage}
                   onChange={(e) => setCurrentMessage(e.target.value)}
-                  placeholder="Ask about pricing or resale strategy"
+                  placeholder={chatLoading ? 'Getting real-time insights...' : 'Ask about your history, brands, or market data'}
                   className="chat-input"
+                  disabled={chatLoading}
                 />
-                <button type="submit" className="chat-send">
+                <button type="submit" className="chat-send" disabled={chatLoading}>
                   <Send size={18} />
                 </button>
               </form>

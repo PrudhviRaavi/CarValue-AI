@@ -1341,6 +1341,7 @@ a {
   border-radius: 18px;
   line-height: 1.5;
   font-size: 0.92rem;
+  white-space: pre-wrap;
 }
 
 .chat-ai {
@@ -1380,6 +1381,12 @@ a {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 999px;
+}
+
+.chat-send:disabled,
+.chat-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .chat-fab {
