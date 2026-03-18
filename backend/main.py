@@ -16,6 +16,15 @@ from datetime import timedelta
 from typing import Optional, List, Dict, Any
 from jose import JWTError, jwt
 from dotenv import load_dotenv
+import logging
+
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger("carvalue-api")
 
 import models
 import database
@@ -44,7 +53,22 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "CarValue AI Prediction API"}
+    return {
+        "status": "online",
+        "service": "CarValue AI Prediction API",
+        "version": "1.2.0",
+        "documentation": "/docs",
+        "environment": os.getenv("RENDER_EXTERNAL_URL", "development")
+    }
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "model_loaded": model is not None,
+        "market_data_loaded": market_data is not None
+    }
 
 # Define paths
 ML_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "ml"))
@@ -101,9 +125,9 @@ try:
         model = pickle.load(f)
     with open(ENCODERS_PATH, 'rb') as f:
         encoders = pickle.load(f)
-    print("Model and encoders loaded successfully.")
+    logger.info("Model and encoders loaded successfully.")
 except Exception as e:
-    print(f"Error loading model or encoders: {e}")
+    logger.error(f"Error loading model or encoders: {e}")
     model = None
     encoders = None
 
@@ -120,9 +144,9 @@ try:
         if "Brand" in market_data.columns
         else []
     )
-    print(f"Market dataset loaded for chat insights: {len(market_data)} rows")
+    logger.info(f"Market dataset loaded for chat insights: {len(market_data)} rows")
 except Exception as e:
-    print(f"Error loading market dataset: {e}")
+    logger.error(f"Error loading market dataset: {e}")
     market_data = None
     MARKET_BRANDS = []
 
