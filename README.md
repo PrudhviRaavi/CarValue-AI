@@ -20,6 +20,10 @@
 ## 🌟 Overview
 CarValue AI is a sophisticated end-to-end machine learning application designed to provide instantaneous and highly accurate resale valuations for used vehicles. Built with a focus on **Premium Dark-Mode UI/UX**, **Robust JWT Authentication**, and **Real-Time ML Inference**, it empowers buyers and sellers with data-backed insights before they enter negotiations.
 
+<p align="center">
+  <img src="docs/assets/preview.png" alt="CarValue AI Live Preview" width="800">
+</p>
+
 ---
 
 ## 🚀 Key Features
@@ -107,13 +111,13 @@ npm run dev
 
 Contributions are welcome! If you have a suggestion that would make this better, please fork the repo and create a pull request.
 
-👉 **[Read the full Contributing Guide →](CONTRIBUTING.md)**
+👉 **[Read the full Contributing Guide →](docs/CONTRIBUTING.md)**
 
 ---
 
 ## 📜 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [docs/LICENSE](docs/LICENSE) file for details.
 
 ---
 
