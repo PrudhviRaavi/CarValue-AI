@@ -3,6 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Status-Live-brightgreen?style=for-the-badge" alt="Status">
+  <img src="https://github.com/PrudhviRaavi/CarValue-AI/actions/workflows/python-lint.yml/badge.svg" alt="Python Verification">
   <img src="https://img.shields.io/badge/Stack-Fullstack%20AI-orange?style=for-the-badge" alt="Stack">
   <img src="https://img.shields.io/badge/ML%20Accuracy-97.6%25-purple?style=for-the-badge" alt="ML Accuracy">
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">

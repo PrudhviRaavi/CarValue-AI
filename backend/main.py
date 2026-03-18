@@ -36,7 +36,30 @@ load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 # Initialize Database
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Car Value AI Prediction API")
+app = FastAPI(
+    title="CarValue AI | Precision Prediction API",
+    description="""
+    High-accuracy used-car valuation API powered by Random Forest Regression.
+    
+    ### Capabilities
+    * **Valuation**: Generate instant price points based on market-wide training data.
+    * **Authentication**: Secure JWT-based user session management.
+    * **Assistant**: Data-grounded chat copilot for negotiation guidance.
+    
+    [Read the full documentation](https://car-value-ai-psi.vercel.app/docs)
+    """,
+    version="1.2.0",
+    terms_of_service="https://car-value-ai-psi.vercel.app/terms",
+    contact={
+        "name": "Prudhvi Raavi Support",
+        "url": "https://www.linkedin.com/in/prudhvi-krishna-raavi-64484a315",
+        "email": "raaviprudhvi1@gmail.com",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+)
 
 # Add CORS middleware
 app.add_middleware(
