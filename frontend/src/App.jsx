@@ -213,10 +213,6 @@ function DashboardPage({
           <div className="dashboard-hero-copy">
             <p className="eyebrow">Dashboard Overview</p>
             <h1 className="dashboard-title">Welcome back, {user.username}.</h1>
-            <p className="dashboard-copy">
-              This workspace now follows core dashboard best practices: a clear purpose, only the most important metrics,
-              grouped actions, and context around your latest values so decisions are faster.
-            </p>
 
             <div className="dashboard-hero-actions">
               <a href="#workspace" className="button-primary">
@@ -228,24 +224,11 @@ function DashboardPage({
                 Open assistant
               </button>
             </div>
-
-            <div className="dashboard-guidance-list">
-              {DASHBOARD_GUIDANCE.map((item) => (
-                <div key={item} className="dashboard-guidance-item">
-                  <CheckCircle size={16} />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           <aside className="surface dashboard-summary-card" id="account">
             <p className="mini-label mb-2">Account Snapshot</p>
             <h2>Everything important in one place</h2>
-            <p>
-              Your dashboard groups the current estimate workflow, saved valuation history, and account context so the
-              next action is obvious.
-            </p>
 
             <div className="dashboard-summary-list">
               <div className="dashboard-summary-row">
@@ -446,10 +429,6 @@ function DashboardPage({
               <p className="eyebrow">Saved History</p>
               <h2>Your latest valuation activity</h2>
             </div>
-            <p>
-              The dashboard keeps history close to the active workflow so recent numbers always have context and can be
-              compared quickly.
-            </p>
           </div>
 
           <div className="surface dashboard-history-board">
@@ -573,11 +552,6 @@ function AuthPage({
           <div className="auth-intro">
             <p className="mini-label mb-2">Account Access</p>
             <h1 className="font-display auth-title">{isLogin ? 'Welcome back' : 'Create your account'}</h1>
-            <p className="auth-copy">
-              {isLogin
-                ? 'Sign in to unlock saved valuations, history tracking, and protected prediction flows.'
-                : 'Register once to store your pricing history and return anytime with a secure account.'}
-            </p>
           </div>
 
           <form onSubmit={onSubmit} className="auth-form">
@@ -715,9 +689,6 @@ function ResultPanel({ prediction, estimatedTradeIn, formatCurrency }) {
           <div className="result-road" />
         </div>
         <h3 className="result-title">Instant estimate preview</h3>
-        <p className="result-copy">
-          Enter your vehicle details to unlock a market-aligned range, dealer benchmark, and a clear reasoning summary.
-        </p>
         <div className="placeholder-list">
           <div className="placeholder-item">
             <CheckCircle size={16} />
@@ -781,6 +752,27 @@ function ResultPanel({ prediction, estimatedTradeIn, formatCurrency }) {
     </div>
   );
 }
+
+const TICKER_ITEMS = [
+  "⚡ 2021 Tesla Model 3 Long Range valued at $32,400",
+  "⚡ 2019 Toyota Rav4 Hybrid valued at $24,800",
+  "⚡ 2022 BMW 3 Series M Sport valued at $41,200",
+  "⚡ 2018 Honda Civic EX valued at $16,500",
+  "⚡ 2023 Kia EV6 Wind valued at $38,900"
+];
+
+function ValuationTicker() {
+  return (
+    <div className="ticker-wrap">
+      <div className="ticker-track">
+        {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, idx) => (
+          <div key={idx} className="ticker-item">{item}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 function App() {
   const [formData, setFormData] = useState({
@@ -1210,7 +1202,8 @@ function App() {
         />
       ) : (
       <main id="top">
-        <section className="hero-section">
+        <div className="dark-theme-wrapper">
+          <section className="hero-section">
           <div className="container hero-layout">
             <div className="hero-copy">
               <p className="eyebrow">Know Your Selling Range Faster</p>
@@ -1265,7 +1258,7 @@ function App() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: 'easeOut' }}
-              className="surface hero-card"
+              className="surface hero-card glass-panel"
               id="valuation"
             >
               <div className="hero-card-head">
@@ -1348,25 +1341,10 @@ function App() {
             </motion.div>
           </div>
         </section>
+        <ValuationTicker />
+      </div>
 
-        <section className="section-shell compact-shell">
-          <div className="container compact-grid">
-            {MARKET_SIGNALS.map((item, index) => (
-              <motion.article
-                key={item.title}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08 }}
-                className="surface compact-card"
-              >
-                <p className="mini-label mb-3">Why this helps</p>
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
-              </motion.article>
-            ))}
-          </div>
-        </section>
+
 
         <section className="section-shell" id="market">
           <div className="container">
@@ -1398,35 +1376,6 @@ function App() {
           </div>
         </section>
 
-        <section className="section-shell muted-shell">
-          <div className="container two-column-shell">
-            <div>
-              <p className="eyebrow">How It Works</p>
-              <h2 className="section-title">From vehicle details to a usable range</h2>
-              <p className="section-copy">
-                The flow is designed for speed: enter the essentials, let the model score market fit, then use the result to decide whether to sell, hold, or negotiate.
-              </p>
-            </div>
-
-            <div className="step-grid">
-              <div className="surface step-card">
-                <span className="step-number">1</span>
-                <h3>Select brand and model</h3>
-                <p>Start with the vehicle identity and the details that most buyers ask for first.</p>
-              </div>
-              <div className="surface step-card">
-                <span className="step-number">2</span>
-                <h3>Submit the valuation</h3>
-                <p>The pricing model converts your inputs into an instant estimate and reasoning summary.</p>
-              </div>
-              <div className="surface step-card">
-                <span className="step-number">3</span>
-                <h3>Compare your options</h3>
-                <p>Use the private-party and trade-in figures to position your next conversation properly.</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
 
         <section className="section-shell warm-shell">
