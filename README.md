@@ -9,10 +9,11 @@ It combines:
 
 ## Features
 
-- User registration and login (`/register`, `/token`)
+- User registration and login (`/register`, `/login`, `/token`)
 - Protected valuation endpoint (`/predict`) that stores user history
 - Dashboard metrics for recent valuation activity
-- AI-style helper endpoint for guidance (`/chat`)
+- Ultra-mobile responsive UI with premium micro-animations
+- AI-style helper endpoint for robust valuation guidance (`/chat`)
 - Retraining scripts for dataset preprocessing and model generation
 
 ## Project Layout
@@ -92,7 +93,8 @@ Open: `http://127.0.0.1:5173`
 
 Authentication:
 - `POST /register`
-- `POST /token`
+- `POST /login` (JSON payload)
+- `POST /token` (OAuth2 form format)
 - `GET /users/me`
 
 Valuation:

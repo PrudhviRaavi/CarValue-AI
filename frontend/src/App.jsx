@@ -178,6 +178,7 @@ function DashboardStatCard({ label, value, hint }) {
 function DashboardPage({
   user,
   history,
+  historyLoading,
   sortedHistory,
   latestHistory,
   averageEstimate,
@@ -452,6 +453,13 @@ function DashboardPage({
           </div>
 
           <div className="surface dashboard-history-board">
+            {historyLoading && (
+              <div className="dashboard-loading-state">
+                <span className="loader loader-dark" />
+                Refreshing your saved valuations...
+              </div>
+            )}
+
             {history.length > 0 ? (
               sortedHistory.slice(0, 6).map((item) => (
                 <div key={item.id} className="dashboard-history-row">
@@ -470,7 +478,11 @@ function DashboardPage({
             ) : (
               <div className="dashboard-empty-state">
                 <CheckCircle size={18} />
-                <span>Your dashboard history will appear here after the first successful valuation.</span>
+                <span>
+                  {historyLoading
+                    ? 'Syncing your dashboard history...'
+                    : 'Your dashboard history will appear here after the first successful valuation.'}
+                </span>
               </div>
             )}
           </div>
@@ -801,6 +813,8 @@ function App() {
   const [authNotice, setAuthNotice] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [initializingSession, setInitializingSession] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     {
@@ -846,26 +860,54 @@ function App() {
     }).format(value);
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (token) {
-      axios
-        .get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => {
-          setUser(res.data);
-          fetchHistory(token);
-        })
-        .catch(() => {
-          localStorage.removeItem('token');
-          sessionStorage.removeItem('token');
-        });
-    }
+    let isMounted = true;
+
+    const restoreSession = async () => {
+      const token = getStoredToken();
+      if (!token) {
+        setInitializingSession(false);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!isMounted) return;
+
+        setUser(res.data);
+        await fetchHistory(token, { showLoader: true });
+      } catch {
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+      } finally {
+        if (isMounted) {
+          setInitializingSession(false);
+        }
+      }
+    };
+
+    restoreSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  const fetchHistory = async (token) => {
+  const fetchHistory = async (token, options = {}) => {
+    const showLoader = options.showLoader ?? true;
+
+    if (!token) {
+      setHistory([]);
+      return;
+    }
+
+    if (showLoader) {
+      setHistoryLoading(true);
+    }
+
     try {
       const response = await axios.get(`${API_BASE}/predictions`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -873,6 +915,10 @@ function App() {
       setHistory(response.data);
     } catch (err) {
       console.error('Failed to fetch history:', err);
+    } finally {
+      if (showLoader) {
+        setHistoryLoading(false);
+      }
     }
   };
 
@@ -895,7 +941,7 @@ function App() {
       const response = await axios.post(`${API_BASE}/predict`, formData, { headers });
       setPrediction(response.data);
       setNotice('Valuation completed and saved to your history.');
-      fetchHistory(token);
+      await fetchHistory(token, { showLoader: true });
     } catch (err) {
       setError(err.response?.data?.detail || 'Prediction failed. Verify backend is running and your token is valid.');
       setNotice(null);
@@ -960,10 +1006,13 @@ function App() {
     setAuthNotice(null);
 
     try {
-      const endpoint = isLogin ? '/token' : '/register';
+      const endpoint = isLogin ? '/login' : '/register';
       const payload =
         isLogin
-          ? new URLSearchParams({ username: authData.identifier.trim(), password: authData.password })
+          ? {
+              identifier: authData.identifier.trim(),
+              password: authData.password,
+            }
           : {
               username: authData.username.trim(),
               email: authData.email.trim(),
@@ -984,7 +1033,7 @@ function App() {
         headers: { Authorization: `Bearer ${response.data.access_token}` },
       });
       setUser(userResponse.data);
-      fetchHistory(response.data.access_token);
+      await fetchHistory(response.data.access_token, { showLoader: true });
       setNotice(isLogin ? 'Signed in successfully.' : 'Account created and signed in.');
       setError(null);
       setAuthData({
@@ -998,7 +1047,11 @@ function App() {
       });
       setAuthView(null);
     } catch (err) {
-      setAuthError(err.response?.data?.detail || 'Authentication failed. Please check your credentials and backend status.');
+      const detail = err.response?.data?.detail;
+      const message = Array.isArray(detail)
+        ? detail.map((item) => item.msg || 'Authentication failed').join(', ')
+        : detail || 'Authentication failed. Please check your credentials and backend status.';
+      setAuthError(message);
       setAuthNotice(null);
     } finally {
       setAuthLoading(false);
@@ -1039,6 +1092,21 @@ function App() {
       setChatLoading(false);
     }
   };
+
+  if (initializingSession) {
+    return (
+      <div className="app-shell app-loading-shell">
+        <div className="page-noise" />
+        <div className="app-loading-center">
+          <div className="surface app-loading-card">
+            <span className="loader loader-accent app-loader-lg" />
+            <h2>Loading your workspace</h2>
+            <p>Verifying account session and syncing dashboard history.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (authView) {
     return (
@@ -1088,7 +1156,6 @@ function App() {
               <>
                 <a href="#valuation">Valuation</a>
                 <a href="#market">Market Drivers</a>
-                <a href="#history">History</a>
                 <a href="#faq">FAQ</a>
               </>
             )}
@@ -1122,6 +1189,7 @@ function App() {
         <DashboardPage
           user={user}
           history={history}
+          historyLoading={historyLoading}
           sortedHistory={sortedHistory}
           latestHistory={latestHistory}
           averageEstimate={averageEstimate}
@@ -1360,41 +1428,6 @@ function App() {
           </div>
         </section>
 
-        {user && history.length > 0 && (
-          <section className="section-shell" id="history">
-            <div className="container">
-              <div className="section-head">
-                <div>
-                  <p className="eyebrow">Saved History</p>
-                  <h2>Your recent valuations</h2>
-                </div>
-                <p>Every protected estimate is stored so you can revisit older ranges and compare newer market conditions.</p>
-              </div>
-
-              <div className="history-grid">
-                {history.slice().reverse().map((item, idx) => (
-                  <motion.article
-                    key={item.id}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.07 }}
-                    className="surface history-card"
-                  >
-                    <div className="history-card-head">
-                      <span className="history-year">{item.year}</span>
-                      <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <h3>
-                      {item.brand} {item.model_name}
-                    </h3>
-                    <strong>{formatCurrency(item.price)}</strong>
-                  </motion.article>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         <section className="section-shell warm-shell">
           <div className="container seller-shell">
@@ -1514,6 +1547,14 @@ function App() {
                     <div className={`chat-bubble ${msg.role === 'user' ? 'chat-user' : 'chat-ai'}`}>{msg.text}</div>
                   </div>
                 ))}
+                {chatLoading && (
+                  <div className="flex justify-start">
+                    <div className="chat-bubble chat-ai chat-typing">
+                      <span className="loader loader-dark" />
+                      Thinking with live data...
+                    </div>
+                  </div>
+                )}
                 <div ref={chatEndRef} />
               </div>
 
@@ -1526,7 +1567,7 @@ function App() {
                   disabled={chatLoading}
                 />
                 <button type="submit" className="chat-send" disabled={chatLoading}>
-                  <Send size={18} />
+                  {chatLoading ? <span className="loader" /> : <Send size={18} />}
                 </button>
               </form>
             </motion.div>

@@ -62,6 +62,40 @@ a {
   min-height: 100vh;
 }
 
+.app-loading-shell {
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.app-loading-center {
+  width: min(520px, 100%);
+}
+
+.app-loading-card {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 2rem 1.5rem;
+}
+
+.app-loading-card h2 {
+  margin: 0;
+  font-family: 'Sora', sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.app-loading-card p {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.app-loader-lg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
 .page-noise {
   position: fixed;
   inset: 0;
@@ -432,6 +466,19 @@ a {
 .dashboard-history-board {
   display: grid;
   gap: 0.85rem;
+}
+
+.dashboard-loading-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 14px;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: rgba(15, 118, 110, 0.07);
+  border: 1px solid rgba(15, 118, 110, 0.2);
 }
 
 .dashboard-history-row {
@@ -1355,6 +1402,12 @@ a {
   color: white;
 }
 
+.chat-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .chat-input-wrap {
   border-top: 1px solid var(--surface-border);
 }
@@ -1403,6 +1456,16 @@ a {
   border-top-color: white;
   border-radius: 999px;
   animation: spin 0.8s linear infinite;
+}
+
+.loader-dark {
+  border-color: rgba(17, 32, 51, 0.2);
+  border-top-color: var(--accent-strong);
+}
+
+.loader-accent {
+  border-color: rgba(15, 118, 110, 0.2);
+  border-top-color: var(--accent-strong);
 }
 
 @keyframes spin {
@@ -1487,5 +1550,58 @@ a {
   .auth-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* --- Premium Micro-Animations and Micro-Interactions --- */
+.button-primary:active,
+.button-ghost:active,
+.icon-button:active,
+.brand-chip:active,
+.chat-send:active,
+.faq-trigger:active,
+.link-button:active {
+  transform: scale(0.96);
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-action-card:active,
+.history-card:active,
+.insight-card:active,
+.step-card:active,
+.compact-card:active {
+  transform: scale(0.98);
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Ultra-Mobile Polish (<=480px) --- */
+@media (max-width: 480px) {
+  .dashboard-title {
+    font-size: clamp(2.2rem, 8vw, 2.6rem);
+  }
+  .hero-title {
+    font-size: clamp(2.4rem, 9vw, 2.8rem);
+  }
+  .hero-metrics {
+    gap: 0.5rem;
+  }
+  .inline-metric {
+    padding: 0.8rem;
+  }
+  .trust-icon, .dashboard-action-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+  body, .page-noise {
+    background-size: 15px 15px;
+  }
+  .auth-panel,
+  .dashboard-workspace-card,
+  .dashboard-summary-card,
+  .dashboard-card {
+    padding: 1.25rem;
+  }
+  .dashboard-summary-row {
+    padding: 0.75rem 0.85rem;
   }
 }

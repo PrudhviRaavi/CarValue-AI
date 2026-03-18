@@ -8,16 +8,21 @@ import json
 import time
 from urllib import request as urlrequest
 from urllib import error as urlerror
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from typing import Optional, List, Dict, Any
 from jose import JWTError, jwt
+from dotenv import load_dotenv
 
 import models
 import database
 import auth
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 
 # Initialize Database
 models.Base.metadata.create_all(bind=database.engine)
@@ -35,19 +40,35 @@ app.add_middleware(
 )
 
 # Define paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ML_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "ml"))
 MODEL_PATH = os.path.join(ML_DIR, "model.pkl")
 ENCODERS_PATH = os.path.join(ML_DIR, "encoders.pkl")
 MARKET_DATA_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "car_data.csv"))
 
+
+def _clean_env_value(value: Optional[str]) -> str:
+    if value is None:
+        return ""
+    cleaned = value.strip()
+    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in ('"', "'"):
+        cleaned = cleaned[1:-1].strip()
+    return cleaned
+
+
 # Optional LLM configuration for chat enhancement
-LLM_API_URL = os.getenv("GEMINI_API_URL", "").strip() or os.getenv("LLM_API_URL", "").strip()
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash").strip()
-LLM_API_KEY = (
-    os.getenv("LLM_API_KEY", "").strip()
-    or os.getenv("GEMINI_API_KEY", "").strip()
-    or os.getenv("GOOGLE_API_KEY", "").strip()
+LLM_API_URL = _clean_env_value(os.getenv("GEMINI_API_URL", "")) or _clean_env_value(os.getenv("LLM_API_URL", ""))
+LLM_MODEL = _clean_env_value(os.getenv("LLM_MODEL", "gemini-1.5-flash")) or "gemini-1.5-flash"
+LLM_API_KEY = next(
+    (
+        value
+        for value in [
+            _clean_env_value(os.getenv("LLM_API_KEY")),
+            _clean_env_value(os.getenv("GEMINI_API_KEY")),
+            _clean_env_value(os.getenv("GOOGLE_API_KEY")),
+        ]
+        if value
+    ),
+    "",
 )
 
 try:
@@ -59,6 +80,13 @@ try:
     GEMINI_MAX_RETRIES = max(0, int(os.getenv("GEMINI_MAX_RETRIES", "2")))
 except ValueError:
     GEMINI_MAX_RETRIES = 2
+
+try:
+    GEMINI_RATE_LIMIT_COOLDOWN_SECONDS = max(15, int(os.getenv("GEMINI_RATE_LIMIT_COOLDOWN_SECONDS", "90")))
+except ValueError:
+    GEMINI_RATE_LIMIT_COOLDOWN_SECONDS = 90
+
+GEMINI_COOLDOWN_UNTIL = 0.0
 
 # Load model and encoders
 try:
@@ -219,7 +247,48 @@ def _get_mileage_signal() -> Optional[Dict[str, float]]:
     }
 
 
+def _append_key_query(url: str, api_key: str) -> str:
+    parsed = urlparse(url)
+    query_items = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query_items.setdefault("key", api_key)
+    return urlunparse(parsed._replace(query=urlencode(query_items)))
+
+
+def _http_error_text(exc: urlerror.HTTPError) -> str:
+    try:
+        raw = exc.read().decode("utf-8", errors="ignore").strip()
+        if not raw:
+            return ""
+        try:
+            parsed = json.loads(raw)
+            msg = ((parsed.get("error") or {}).get("message") or "").strip()
+            if msg:
+                return msg
+        except json.JSONDecodeError:
+            pass
+        return raw
+    except Exception:
+        return ""
+
+
+def _compact_error_message(message: str, max_len: int = 240) -> str:
+    normalized = " ".join(message.split())
+    if len(normalized) <= max_len:
+        return normalized
+    return normalized[: max_len - 3] + "..."
+
+
 def _call_gemini_native(prompt: str) -> Optional[str]:
+    global GEMINI_COOLDOWN_UNTIL
+
+    if not LLM_API_KEY:
+        raise RuntimeError("No Gemini API key configured.")
+
+    now = time.time()
+    if now < GEMINI_COOLDOWN_UNTIL:
+        wait_seconds = int(max(1, GEMINI_COOLDOWN_UNTIL - now))
+        raise RuntimeError(f"Gemini is temporarily cooling down after rate-limit errors. Retry in about {wait_seconds}s.")
+
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -232,11 +301,12 @@ def _call_gemini_native(prompt: str) -> Optional[str]:
     if LLM_API_URL:
         candidate_urls = [LLM_API_URL]
     else:
-        # Try configured model first, then common Gemini fallbacks for compatibility.
+        # Try configured model first, then low-cost/high-availability fallbacks.
         candidate_models = [
             LLM_MODEL,
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-latest",
+            "gemini-flash-latest",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash-lite",
             "gemini-2.0-flash",
         ]
         unique_models = list(dict.fromkeys(candidate_models))
@@ -249,38 +319,69 @@ def _call_gemini_native(prompt: str) -> Optional[str]:
 
     parsed = None
     for api_url in candidate_urls:
-        for attempt in range(GEMINI_MAX_RETRIES + 1):
-            req = urlrequest.Request(
-                api_url,
-                data=data,
-                headers={
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": LLM_API_KEY,
-                },
-                method="POST",
-            )
+        request_urls = [api_url, _append_key_query(api_url, LLM_API_KEY)]
+        for request_url in list(dict.fromkeys(request_urls)):
+            for attempt in range(GEMINI_MAX_RETRIES + 1):
+                req = urlrequest.Request(
+                    request_url,
+                    data=data,
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": LLM_API_KEY,
+                    },
+                    method="POST",
+                )
 
-            try:
-                with urlrequest.urlopen(req, timeout=LLM_TIMEOUT_SECONDS) as resp:
-                    body = resp.read().decode("utf-8")
-                    parsed = json.loads(body)
-                break
-            except urlerror.HTTPError as exc:
-                # Retry with another model endpoint only when the model/path is not found.
-                if exc.code == 404:
+                try:
+                    with urlrequest.urlopen(req, timeout=LLM_TIMEOUT_SECONDS) as resp:
+                        body = resp.read().decode("utf-8")
+                        parsed = json.loads(body)
                     break
+                except urlerror.HTTPError as exc:
+                    error_text = _http_error_text(exc)
 
-                # Retry rate-limit / transient failures with short backoff.
-                if exc.code in (429, 500, 503) and attempt < GEMINI_MAX_RETRIES:
-                    time.sleep(1 + attempt)
-                    continue
+                    # Retry with another model endpoint only when the model/path is not found.
+                    if exc.code == 404:
+                        break
 
-                raise
-            except urlerror.URLError:
-                if attempt < GEMINI_MAX_RETRIES:
-                    time.sleep(1 + attempt)
-                    continue
-                raise
+                    if exc.code in (401, 403):
+                        raise RuntimeError(
+                            "Gemini API key rejected (401/403). Check GEMINI_API_KEY/GOOGLE_API_KEY and ensure the API is enabled for that project."
+                        )
+
+                    if exc.code == 429:
+                        retry_after_raw = (exc.headers or {}).get("Retry-After", "").strip()
+                        try:
+                            retry_after = max(1, int(retry_after_raw))
+                        except ValueError:
+                            retry_after = GEMINI_RATE_LIMIT_COOLDOWN_SECONDS
+
+                        GEMINI_COOLDOWN_UNTIL = time.time() + retry_after
+
+                        if attempt < GEMINI_MAX_RETRIES:
+                            time.sleep(min(2 + attempt, 4))
+                            continue
+
+                        detail = _compact_error_message(error_text or "quota or rate limit reached")
+                        raise RuntimeError(f"Gemini rate-limited (429). Cooling down for {retry_after}s. {detail}")
+
+                    # Retry transient failures with short backoff.
+                    if exc.code in (500, 503) and attempt < GEMINI_MAX_RETRIES:
+                        time.sleep(1 + attempt)
+                        continue
+
+                    detail = f"Gemini request failed ({exc.code})."
+                    if error_text:
+                        detail = f"{detail} {_compact_error_message(error_text)}"
+                    raise RuntimeError(detail)
+                except urlerror.URLError as exc:
+                    if attempt < GEMINI_MAX_RETRIES:
+                        time.sleep(1 + attempt)
+                        continue
+                    raise RuntimeError(f"Network error reaching Gemini: {exc}")
+
+            if parsed is not None:
+                break
 
         if parsed is not None:
             break
@@ -307,7 +408,7 @@ def _enhance_chat_with_llm(message: str, base_reply: str, data_points: List[str]
     Falls back to local response if API key is not configured or request fails.
     """
     if not LLM_API_KEY:
-        return {"reply": base_reply, "llm_used": False, "llm_error": None}
+        return {"reply": base_reply, "llm_used": False, "llm_error": "No Gemini API key configured"}
 
     facts_block = "\n".join(f"- {item}" for item in data_points) if data_points else "- No additional numeric facts"
     prompt = (
@@ -332,9 +433,10 @@ def _enhance_chat_with_llm(message: str, base_reply: str, data_points: List[str]
             return {"reply": base_reply, "llm_used": False, "llm_error": None}
 
         return {"reply": rewritten, "llm_used": True, "llm_error": None}
-    except (urlerror.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as exc:
-        print(f"LLM enhancement fallback: {exc}")
-        return {"reply": base_reply, "llm_used": False, "llm_error": str(exc)}
+    except (RuntimeError, urlerror.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as exc:
+        compact = _compact_error_message(str(exc))
+        print(f"LLM enhancement fallback: {compact}")
+        return {"reply": base_reply, "llm_used": False, "llm_error": compact}
 
 # Pydantic Schemas
 class UserCreate(BaseModel):
@@ -345,6 +447,10 @@ class UserCreate(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class LoginRequest(BaseModel):
+    identifier: str
+    password: str
 
 class CarDetails(BaseModel):
     brand: str
@@ -371,6 +477,25 @@ class PredictionResponse(BaseModel):
 class ChatMessage(BaseModel):
     message: str
     context: Optional[Dict] = None
+
+
+def authenticate_and_create_token(identifier: str, password: str, db: Session) -> Dict[str, str]:
+    normalized_identifier = identifier.strip()
+    user = db.query(models.User).filter(
+        (models.User.username == normalized_identifier) | (models.User.email == normalized_identifier)
+    ).first()
+    if not user or not auth.verify_password(password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = auth.create_access_token(
+        data={"sub": user.username},
+        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # Auth Routes
 @app.post("/register", response_model=Token)
@@ -401,21 +526,11 @@ async def register(user: UserCreate, db: Session = Depends(database.get_db)):
 
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    identifier = form_data.username.strip()
-    user = db.query(models.User).filter(
-        (models.User.username == identifier) | (models.User.email == identifier)
-    ).first()
-    if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token = auth.create_access_token(
-        data={"sub": user.username},
-        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return authenticate_and_create_token(form_data.username, form_data.password, db)
+
+@app.post("/login", response_model=Token)
+async def login_json(login_request: LoginRequest, db: Session = Depends(database.get_db)):
+    return authenticate_and_create_token(login_request.identifier, login_request.password, db)
 
 @app.get("/users/me")
 async def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
@@ -516,6 +631,18 @@ async def chat(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     msg = message.lower()
+    stats_intent = any(keyword in msg for keyword in [
+        "stat",
+        "stats",
+        "data",
+        "dataset",
+        "number",
+        "numbers",
+        "average",
+        "median",
+        "rows",
+        "trend",
+    ])
     user = _get_user_from_auth_header(authorization, db)
     user_insights = _get_user_prediction_insights(user, db) if user else None
 
@@ -611,19 +738,21 @@ async def chat(
                 "I can answer with your saved valuations and dataset-backed market stats. "
                 "Try asking: 'my latest valuation', 'my average estimate', 'Toyota price trend', or 'mileage impact'."
             )
-            data_points = [
-                f"Your saved valuations: {user_insights['count']}",
-                f"Your average estimate: {_format_usd(user_insights['average_price'])}",
-            ]
+            if stats_intent:
+                data_points = [
+                    f"Your saved valuations: {user_insights['count']}",
+                    f"Your average estimate: {_format_usd(user_insights['average_price'])}",
+                ]
         elif overall_snapshot:
             response = (
                 "I can provide dataset-backed market stats right now. "
                 "Sign in if you want account-specific answers based on your saved valuation history."
             )
-            data_points = [
-                f"Dataset rows available: {overall_snapshot['sample_count']}",
-                f"Current overall average price: {_format_usd(overall_snapshot['avg_price'])}",
-            ]
+            if stats_intent:
+                data_points = [
+                    f"Dataset rows available: {overall_snapshot['sample_count']}",
+                    f"Current overall average price: {_format_usd(overall_snapshot['avg_price'])}",
+                ]
         else:
             response = "I can answer valuation questions, but market data is currently unavailable on the server."
 
