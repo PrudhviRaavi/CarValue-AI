@@ -14,8 +14,6 @@ dist/
 ml/*.pkl
 ml/X_*.csv
 ml/y_*.csv
-data/*.csv
-
 # System
 .DS_Store
 Thumbs.db
