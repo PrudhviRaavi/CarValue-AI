@@ -1,19 +1,47 @@
+# Environment
+.env
+.env.*
+!.env.example
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+env/
 venv/
-.env
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.pytest_cache/
 
 # Node
 node_modules/
 dist/
 .eslintcache
+.vite/
 
 # Data/ML Artifacts
 ml/*.pkl
-ml/X_*.csv
-ml/y_*.csv
+# ml/X_*.csv # We keep these for tracking if small but usually ignored
+# ml/y_*.csv
+
+# DB
+*.db
+*.sqlite3
+
 # System
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
